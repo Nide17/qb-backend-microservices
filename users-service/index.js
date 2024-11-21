@@ -14,7 +14,7 @@ const httpServer = createServer(app)
 const allowList = [
     'http://localhost:5173',
     'http://localhost:4000',
-    'http://localhost:5000',
+    'http://localhost:5001',
 ]
 
 const corsOptions = {
@@ -46,8 +46,8 @@ app.get('/', (req, res) => { res.send('Welcome to QB users API') })
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
-        httpServer.listen(process.env.PORT || 5000, () => {
-            console.log(`Server is running on port ${process.env.PORT || 5000}, and MongoDB is connected`)
+        httpServer.listen(process.env.PORT || 5001, () => {
+            console.log(`Users service is running on port ${process.env.PORT || 5001}, and MongoDB is connected`)
             initialize(httpServer)  // Initializing Socket.io after server starts
         })
     })

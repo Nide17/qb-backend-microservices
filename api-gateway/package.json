@@ -1,0 +1,27 @@
+{
+  "name": "api-gateway",
+  "version": "1.0.0",
+  "description": "API gateway for quiz blog backend services",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "gateway": "nodemon index.js",
+    "users": "cd ../users-service && npm start",
+    "dev-users": "cd ../users-service && npm run users",
+    "start-all": "concurrently \"npm start\" \"npm run users\"",
+    "dev": "concurrently \"npm run gateway\" \"npm run dev-users\""
+  },
+  "author": "Niyomwungeri Parmenide Ishimwe",
+  "license": "MIT",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.1",
+    "morgan": "^1.10.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0",
+    "nodemon": "^3.1.7"
+  }
+}

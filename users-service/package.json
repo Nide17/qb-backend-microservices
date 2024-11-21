@@ -5,8 +5,7 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "server": "nodemon index.js",
-    "dev": "concurrently \"npm run server\""
+    "users": "nodemon index.js"
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",
@@ -25,7 +24,6 @@
     "socket.io": "^4.8.1"
   },
   "devDependencies": {
-    "concurrently": "^9.1.0",
     "nodemon": "^3.1.7"
   }
 }

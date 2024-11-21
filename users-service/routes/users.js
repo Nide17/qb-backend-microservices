@@ -6,18 +6,25 @@ const { profileUpload } = require('../utils/profileUpload.js')
 
 const router = express.Router()
 
-router.get("/", auth, getUsers)
+// GET routes
+router.get("/", getUsers)
 router.get("/loadUser", auth, loadUser)
 router.get("/:id", authRole(['SuperAdmin']), getOneUser)
+
+// POST routes
 router.post("/login", login)
 router.post("/logout", logout)
 router.post("/register", register)
 router.post("/verifyOTP", verifyOTP)
 router.post("/sendResetLink", sendResetLink)
 router.post("/sendNewPassword", sendNewPassword)
-router.put("/updateProfileImage/:id", auth, profileUpload.single("profilePicture"), updateProfileImage) // /user-image/:id
-router.put("/updateProfile/:id", auth, updateProfile) //user-details/:id
+
+// PUT routes
+router.put("/updateProfileImage/:id", auth, profileUpload.single("profilePicture"), updateProfileImage)
+router.put("/updateProfile/:id", auth, updateProfile)
 router.put("/:id", authRole(['SuperAdmin']), updateUser)
+
+// DELETE routes
 router.delete("/:id", authRole(['SuperAdmin']), deleteUser)
 
 module.exports = router

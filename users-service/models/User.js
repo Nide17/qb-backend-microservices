@@ -56,6 +56,7 @@ const UserSchema = new Schema({
   otp: {
     type: String,
     default: '',
+    expires: 900  // 15 minutes
   },
   verified: {
     type: Boolean,
