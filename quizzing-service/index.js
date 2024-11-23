@@ -3,7 +3,6 @@ const mongoose = require('mongoose')
 const cors = require('cors')
 const { createServer } = require("http");
 const dotenv = require('dotenv')
-const { initialize } = require('./utils/socket')
 
 // Config
 dotenv.config()
@@ -14,7 +13,7 @@ const httpServer = createServer(app)
 const allowList = [
     'http://localhost:5173',
     'http://localhost:4000',
-    'http://localhost:5001',
+    'http://localhost:5002',
 ]
 
 const corsOptions = {
@@ -38,18 +37,18 @@ app.use(cors(corsOptions))
 app.use(express.json())
 
 // Routes
-app.use("/api/users", require('./routes/users'))
-app.use("/api/subscribed-users", require('./routes/subscribed-users'))
+app.use("/api/categories", require('./routes/categories'))
+app.use("/api/quizzes", require('./routes/quizzes'))
+app.use("/api/questions", require('./routes/questions'))
 
 // home route
-app.get('/', (req, res) => { res.send('Welcome to QB users API') })
+app.get('/', (req, res) => { res.send('Welcome to QB categories API') })
 
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
-        httpServer.listen(process.env.PORT || 5001, () => {
-            console.log(`Users service is running on port ${process.env.PORT || 5001}, and MongoDB is connected`)
-            initialize(httpServer)  // Initializing Socket.io after server starts
+        httpServer.listen(process.env.PORT || 5002, () => {
+            console.log(`Quizzing service is running on port ${process.env.PORT || 5002}, and MongoDB is connected`)
         })
     })
     .catch((err) => console.log(err))

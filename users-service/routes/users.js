@@ -7,7 +7,7 @@ const { profileUpload } = require('../utils/profileUpload.js')
 const router = express.Router()
 
 // GET routes
-router.get("/", getUsers)
+router.get("/", auth, getUsers)
 router.get("/loadUser", auth, loadUser)
 router.get("/:id", authRole(['SuperAdmin']), getOneUser)
 

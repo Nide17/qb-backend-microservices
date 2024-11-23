@@ -28,8 +28,14 @@ const routeToService = (serviceUrl) => async (req, res) => {
     }
 };
 
-// Routing to Services
+// Users Service
 app.use('/api/users', routeToService(process.env.USERS_SERVICE_URL));
+app.use('/api/subscribed-users', routeToService(process.env.USERS_SERVICE_URL));
+
+// Quizzing Service
+app.use('/api/categories', routeToService(process.env.QUIZZING_SERVICE_URL));
+app.use('/api/quizzes', routeToService(process.env.QUIZZING_SERVICE_URL));
+app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

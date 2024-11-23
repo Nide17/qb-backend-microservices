@@ -5,11 +5,13 @@
   "main": "index.js",
   "scripts": {
     "start": "node index.js",
-    "gateway": "nodemon index.js",
+    "dev": "nodemon index.js",
     "users": "cd ../users-service && npm start",
     "dev-users": "cd ../users-service && npm run users",
-    "start-all": "concurrently \"npm start\" \"npm run users\"",
-    "dev": "concurrently \"npm run gateway\" \"npm run dev-users\""
+    "quizzing": "cd ../quizzing-service && npm start",
+    "dev-quizzing": "cd ../quizzing-service && npm run quizzing",
+    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\"",
+    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\""
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",
