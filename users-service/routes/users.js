@@ -1,5 +1,5 @@
 const express = require("express")
-const { getUsers, loadUser, getOneUser, login, register, verifyOTP, logout, updateProfile, updateUser, deleteUser, sendResetLink, sendNewPassword, updateProfileImage
+const { getUsers, loadUser, getOneUser, getAdminsEmails, login, register, verifyOTP, logout, updateProfile, updateUser, deleteUser, sendResetLink, sendNewPassword, updateProfileImage
 } = require("../controllers/users")
 const { auth, authRole } = require("../middlewares/auth")
 const { profileUpload } = require('../utils/profileUpload.js')
@@ -9,6 +9,7 @@ const router = express.Router()
 // GET routes
 router.get("/", auth, getUsers)
 router.get("/loadUser", auth, loadUser)
+router.get("/admins-emails", getAdminsEmails)
 router.get("/:id", authRole(['SuperAdmin']), getOneUser)
 
 // POST routes

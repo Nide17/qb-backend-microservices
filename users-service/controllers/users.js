@@ -14,7 +14,10 @@ const s3Config = new S3({
 })
 
 // Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message })
+const handleError = (res, err, status = 400) => {
+    console.error(err)
+    res.status(status).json({ msg: err.message })
+}
 
 // Helper function to find user by ID
 const findUserById = async (id, res, selectFields = '') => {
@@ -50,6 +53,17 @@ exports.loadUser = async (req, res) => {
 exports.getOneUser = async (req, res) => {
     const user = await findUserById(req.params.id, res)
     if (user) res.status(200).json(user)
+}
+
+exports.getAdminsEmails = async (req, res) => {
+    try {
+        const admins = await User.find({ role: { $in: ['Admin', 'SuperAdmin'] } }).select('email')
+        if (!admins) return res.status(404).json({ msg: 'No admins found!' })
+        const adminEmails = admins.map(admin => admin.email)
+        res.status(200).json(adminEmails)
+    } catch (err) {
+        handleError(res, err)
+    }
 }
 
 exports.login = async (req, res) => {

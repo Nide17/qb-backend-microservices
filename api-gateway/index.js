@@ -37,6 +37,14 @@ app.use('/api/categories', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/quizzes', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
 
+// Posts Service
+app.use('/api/adverts', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/faqs', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/blog-posts', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/posts-ategories', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/image-ploads', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/blog-posts-views', routeToService(process.env.POSTS_SERVICE_URL));
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

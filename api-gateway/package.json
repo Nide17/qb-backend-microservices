@@ -10,8 +10,10 @@
     "dev-users": "cd ../users-service && npm run users",
     "quizzing": "cd ../quizzing-service && npm start",
     "dev-quizzing": "cd ../quizzing-service && npm run quizzing",
-    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\"",
-    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\""
+    "posts": "cd ../posts-service && npm start",
+    "dev-posts": "cd ../posts-service && npm run posts",
+    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\"",
+    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\""
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",
