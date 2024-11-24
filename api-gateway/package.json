@@ -26,8 +26,10 @@
     "dev-feedbacks": "cd ../feedbacks-service && npm run feedbacks",
     "comments": "cd ../comments-service && npm start",
     "dev-comments": "cd ../comments-service && npm run comments",
-    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run schools\" \"npm run courses\" \"npm run scores\" \"npm run downloads\" \"npm run contacts\" \"npm run feedbacks\" \"npm run comments\"",
-    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-schools\" \"npm run dev-courses\" \"npm run dev-scores\" \"npm run dev-downloads\" \"npm run dev-contacts\" \"npm run dev-feedbacks\" \"npm run dev-comments\""
+    "statistics": "cd ../statistics-service && npm start",
+    "dev-statistics": "cd ../statistics-service && npm run statistics",
+    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run schools\" \"npm run courses\" \"npm run scores\" \"npm run downloads\" \"npm run contacts\" \"npm run feedbacks\" \"npm run comments\" \"npm run statistics\"",
+    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-schools\" \"npm run dev-courses\" \"npm run dev-scores\" \"npm run dev-downloads\" \"npm run dev-contacts\" \"npm run dev-feedbacks\" \"npm run dev-comments\" \"npm run dev-statistics\""
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",

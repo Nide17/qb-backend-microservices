@@ -80,11 +80,16 @@ app.use('/api/feedbacks', routeToService(process.env.FEEDBACKS_SERVICE_URL));
 app.use('/api/quizzes-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
 app.use('/api/questions-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
 
+// Statistics Service
+app.use('/api/statistics', routeToService(process.env.STATISTICS_SERVICE_URL));
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);
     res.status(err.status || 500).send({ error: err.message });
 });
 
+// Port
+const PORT = process.env.PORT || 5000;
 // Start the API Gateway
-app.listen(5000, () => console.log(`API Gateway is running on port ${5000}`));
+app.listen(PORT, () => console.log(`API Gateway is running on port ${PORT}`));
