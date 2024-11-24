@@ -97,7 +97,7 @@ exports.getQuizzesByCategory = async (req, res) => {
 
 exports.getQuizzesByNotes = async (req, res) => {
     try {
-        const categories = await Category.find({ courseCategory: req.params.id });
+        const categories = await Category.find({ category: req.params.id });
         if (!categories.length) throw new Error('No category found!');
 
         const quizzes = await Quiz.find({ category: { $in: categories } });

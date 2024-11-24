@@ -57,6 +57,12 @@ app.use('/api/schools', routeToService(process.env.SCHOOLS_SERVICE_URL));
 app.use('/api/levels', routeToService(process.env.SCHOOLS_SERVICE_URL));
 app.use('/api/faculties', routeToService(process.env.SCHOOLS_SERVICE_URL));
 
+// Courses Service
+app.use('/api/categories', routeToService(process.env.COURSES_SERVICE_URL));
+app.use('/api/courses', routeToService(process.env.COURSES_SERVICE_URL));
+app.use('/api/chapters', routeToService(process.env.COURSES_SERVICE_URL));
+app.use('/api/notes', routeToService(process.env.COURSES_SERVICE_URL));
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

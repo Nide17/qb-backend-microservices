@@ -28,7 +28,7 @@ const CategorySchema = new Schema({
   last_updated_by: {
     type: Schema.Types.ObjectId,
   },
-  courseCategory: {
+  category: {
     type: Schema.Types.ObjectId,
   },
   slug: {
