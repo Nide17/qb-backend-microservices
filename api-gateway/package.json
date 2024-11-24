@@ -16,8 +16,10 @@
     "dev-feedbacks": "cd ../feedbacks-service && npm run feedbacks",
     "comments": "cd ../comments-service && npm start",
     "dev-comments": "cd ../comments-service && npm run comments",
-    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run feedbacks\" \"npm run comments\"",
-    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-feedbacks\" \"npm run dev-comments\""
+    "schools": "cd ../schools-service && npm start",
+    "dev-schools": "cd ../schools-service && npm run schools",
+    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run feedbacks\" \"npm run comments\" \"npm run schools\"",
+    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-feedbacks\" \"npm run dev-comments\" \"npm run dev-schools\""
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",

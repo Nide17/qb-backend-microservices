@@ -23,9 +23,14 @@ exports.getBlogPosts = async (req, res) => {
 };
 
 exports.getOneBlogPost = async (req, res) => {
-    const blogPost = await BlogPost.findOne({ slug: req.params.slug })
-        .populate('postsCategory creator')
-    if (blogPost) res.status(200).json(blogPost);
+    try {
+        const blogPost = await BlogPost.findOne({ slug: req.params.slug })
+            .populate('postsCategory creator')
+        if (!blogPost) return res.status(404).json({ msg: 'BlogPost not found!' });
+        res.status(200).json(blogPost);
+    } catch (err) {
+        handleError(res, err);
+    }
 };
 
 exports.getBlogPostsByCategory = async (req, res) => {
@@ -50,13 +55,12 @@ exports.getCreatedBy = async (req, res) => {
 }
 
 exports.createBlogPost = async (req, res) => {
-
     const bp_image = req.file ? req.file : null
     const { title, markdown, postsCategory, creator, bgColor } = req.body
 
     // Simple validation
     if (!title || !markdown || !postsCategory || !creator) {
-        return res.status(400).json({ msg: title })
+        return res.status(400).json({ msg: 'Please provide all required fields' })
     }
 
     try {
@@ -120,36 +124,23 @@ exports.deleteBlogPost = async (req, res) => {
 
         if (blogPost.post_image) {
             const params = {
-                Bucket: process.env.S3_BUCKET || config.get('S3Bucket'),
-                Key: blogPost.post_image.split('/').pop() //if any sub folder-> path/of/the/folder.ext
+                Bucket: process.env.S3_BUCKET,
+                Key: blogPost.post_image.split('/').pop()
             }
 
             try {
-                s3Config.deleteObject(params, (err, data) => {
-                    if (err) {
-                        res.status(400).json({ msg: err.message })
-                        console.log(err, err.stack) // an error occurred
-                    }
-                    else {
-                        res.status(200).json({ msg: 'deleted!' })
-                        console.log(params.Key + ' deleted from ' + params.Bucket)
-                    }
-                })
-
-            }
-            catch (err) {
-                console.log('ERROR in file Deleting : ' + JSON.stringify(err))
-                res.status(400).json({
-                    msg: 'Failed to delete! ' + err.message,
-                    success: false
-                })
+                await s3Config.deleteObject(params).promise();
+                console.log(params.Key + ' deleted from ' + params.Bucket);
+            } catch (err) {
+                console.log('ERROR in file Deleting : ' + JSON.stringify(err));
+                return res.status(400).json({ msg: 'Failed to delete! ' + err.message });
             }
         }
 
         const removedBlogPost = await blogPost.deleteOne()
+        if (!removedBlogPost) throw Error('Something went wrong while deleting!')
 
-        if (!removedBlogPost)
-            throw Error('Something went wrong while deleting!')
+        res.status(200).json({ msg: 'BlogPost deleted successfully!' });
     } catch (err) {
         handleError(res, err);
     }

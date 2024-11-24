@@ -14,6 +14,20 @@ const findCategoryById = async (id, res, selectFields = '') => {
     }
 };
 
+// Helper function to validate category data
+const validateCategoryData = (data) => {
+    const { title, description } = data;
+    if (!title || !description) {
+        throw new Error('Please fill all fields');
+    }
+};
+
+// Helper function to check if category exists by title
+const checkCategoryExists = async (title) => {
+    const category = await Category.findOne({ title });
+    if (category) throw new Error('Category already exists!');
+};
+
 exports.getCategories = async (req, res) => {
     try {
         const categories = await Category.find().sort({ createdAt: -1 });
@@ -30,38 +44,15 @@ exports.getOneCategory = async (req, res) => {
 };
 
 exports.createCategory = async (req, res) => {
-    
-    const { title, description, quizes, created_by, creation_date, courseCategory } = req.body;
-
-    if (!title || !description) {
-        return res.status(400).json({ msg: 'Please fill all fields' });
-    }
-
     try {
-        const category = await Category.findOne({ title });
-        if (category) throw Error('Category already exists!');
+        validateCategoryData(req.body);
+        await checkCategoryExists(req.body.title);
 
-        const newCategory = new Category({
-            title,
-            description,
-            creation_date,
-            quizes,
-            created_by,
-            courseCategory
-        });
-
+        const newCategory = new Category(req.body);
         const savedCategory = await newCategory.save();
-        if (!savedCategory) throw Error('Something went wrong during creation!');
+        if (!savedCategory) throw new Error('Something went wrong during creation!');
 
-        res.status(200).json({
-            _id: savedCategory._id,
-            title: savedCategory.title,
-            description: savedCategory.description,
-            creation_date: savedCategory.creation_date,
-            quizes: savedCategory.quizes,
-            created_by: savedCategory.created_by,
-            courseCategory: savedCategory.courseCategory,
-        });
+        res.status(200).json(savedCategory);
     } catch (err) {
         handleError(res, err);
     }
@@ -69,8 +60,8 @@ exports.createCategory = async (req, res) => {
 
 exports.updateCategory = async (req, res) => {
     try {
-        const category = await Category.findById(req.params.id);
-        if (!category) return res.status(404).json({ msg: 'Category not found!' });
+        const category = await findCategoryById(req.params.id, res);
+        if (!category) return;
 
         const updatedCategory = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedCategory);
@@ -81,11 +72,11 @@ exports.updateCategory = async (req, res) => {
 
 exports.deleteCategory = async (req, res) => {
     try {
-        const category = await Category.findById(req.params.id);
-        if (!category) throw Error('Category not found!');
+        const category = await findCategoryById(req.params.id, res);
+        if (!category) return;
 
         const removedCategory = await Category.deleteOne({ _id: req.params.id });
-        if (removedCategory.deletedCount === 0) throw Error('Something went wrong while deleting!');
+        if (removedCategory.deletedCount === 0) throw new Error('Something went wrong while deleting!');
 
         res.status(200).json({ msg: "Deleted successfully!" });
     } catch (err) {

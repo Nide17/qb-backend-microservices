@@ -15,16 +15,34 @@ const findFeedbackById = async (id, res, selectFields = '') => {
     }
 };
 
+// Helper function for pagination
+const getPagination = (pageNo, pageSize) => {
+    const limit = pageSize;
+    const skip = pageSize * (pageNo - 1);
+    return { limit, skip };
+};
+
+// Helper function to fetch feedback details
+const fetchFeedbackDetails = async (feedback) => {
+    const quiz = await axios.get(`${API_GATEWAY_URL}/quizzes/${feedback.quiz}`);
+    const score = await axios.get(`${API_GATEWAY_URL}/scores/${feedback.score}`);
+    const user = score && await axios.get(`${API_GATEWAY_URL}/users/${score.data.taken_by}`);
+
+    return {
+        ...feedback.toObject(),
+        quiz: quiz.data,
+        score: score && {
+            ...score.data,
+            taken_by: user && user.data
+        }
+    };
+};
+
 exports.getFeedbacks = async (req, res) => {
-
-    // Pagination
-    const totalPages = await Feedback.countDocuments({})
-    var PAGE_SIZE = 20
-    var pageNo = parseInt(req.query.pageNo || "0")
-    var query = {}
-
-    query.limit = PAGE_SIZE
-    query.skip = PAGE_SIZE * (pageNo - 1)
+    const totalPages = await Feedback.countDocuments({});
+    const PAGE_SIZE = 20;
+    const pageNo = parseInt(req.query.pageNo || "0");
+    const query = getPagination(pageNo, PAGE_SIZE);
 
     try {
         const feedbacks = pageNo > 0 ?
@@ -33,22 +51,7 @@ exports.getFeedbacks = async (req, res) => {
 
         if (!feedbacks) throw Error('No feedbacks exist');
 
-        const feedbacksWithDetails = await Promise.all(feedbacks.map(async feedback => {
-
-            // Will fetch quiz, score and user details for each feedback using api gateway later
-            const quiz = await axios.get(`${API_GATEWAY_URL}/quizzes/${feedback.quiz}`);
-            const score = await axios.get(`${API_GATEWAY_URL}/scores/${feedback.score}`);
-            const user = score && await axios.get(`${API_GATEWAY_URL}/users/${score.data.taken_by}`);
-
-            return {
-                ...feedback.toObject(),
-                quiz: quiz.data,
-                score: score && {
-                    ...score.data,
-                    taken_by: user && user.data
-                }
-            };
-        }));
+        const feedbacksWithDetails = await Promise.all(feedbacks.map(fetchFeedbackDetails));
 
         if (pageNo > 0) {
             res.status(200).json({

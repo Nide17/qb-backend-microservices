@@ -14,8 +14,20 @@ const findQuestionCommentById = async (id, res, selectFields = '') => {
     }
 };
 
-exports.getQuestionsComments = async (req, res) => {
+// Helper function to update questionComment status
+const updateQuestionCommentStatus = async (id, status, res) => {
+    try {
+        const questionComment = await QuestionComment.findById(id);
+        if (!questionComment) return res.status(404).json({ msg: 'QuestionComment not found!' });
 
+        const updatedQuestionComment = await QuestionComment.findByIdAndUpdate(id, { status }, { new: true });
+        res.status(200).json(updatedQuestionComment);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
+exports.getQuestionsComments = async (req, res) => {
     try {
         const questionComments = await QuestionComment.find();
         res.status(200).json(questionComments);
@@ -50,7 +62,7 @@ exports.getPendingComments = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-}
+};
 
 exports.getCommentsByQuestion = async (req, res) => {
     try {
@@ -59,7 +71,7 @@ exports.getCommentsByQuestion = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-}
+};
 
 exports.getOneQuestionComment = async (req, res) => {
     const questionComment = await findQuestionCommentById(req.params.id, res);
@@ -73,15 +85,14 @@ exports.getCommentsByQuiz = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-}
+};
 
 exports.createQuestionComment = async (req, res) => {
-
-    const { comment, sender, question, quiz } = req.body
+    const { comment, sender, question, quiz } = req.body;
 
     // Simple validation
     if (!comment || !sender || !quiz || !question) {
-        return res.status(400).json({ msg: 'There are empty fields' })
+        return res.status(400).json({ msg: 'There are empty fields' });
     }
 
     try {
@@ -90,10 +101,10 @@ exports.createQuestionComment = async (req, res) => {
             sender,
             question,
             quiz
-        })
+        });
 
-        const savedQuestionComment = await newQuestionComment.save()
-        if (!savedQuestionComment) throw Error('Something went wrong during creation!')
+        const savedQuestionComment = await newQuestionComment.save();
+        if (!savedQuestionComment) throw Error('Something went wrong during creation!');
 
         res.status(200).json({
             _id: savedQuestionComment._id,
@@ -101,36 +112,19 @@ exports.createQuestionComment = async (req, res) => {
             sender: savedQuestionComment.sender,
             question: savedQuestionComment.question,
             quiz: savedQuestionComment.quiz
-        })
-
+        });
     } catch (err) {
         handleError(res, err);
     }
 };
 
 exports.approveQuestionsComment = async (req, res) => {
-    try {
-        const questionComment = await QuestionComment.findById(req.params.id);
-        if (!questionComment) return res.status(404).json({ msg: 'QuestionComment not found!' });
-
-        const updatedQuestionComment = await QuestionComment.findByIdAndUpdate(req.params.id, { status: 'Approved' }, { new: true });
-        res.status(200).json(updatedQuestionComment);
-    } catch (error) {
-        handleError(res, error);
-    }
-}
+    await updateQuestionCommentStatus(req.params.id, 'Approved', res);
+};
 
 exports.rejectQuestionsComment = async (req, res) => {
-    try {
-        const questionComment = await QuestionComment.findById(req.params.id);
-        if (!questionComment) return res.status(404).json({ msg: 'QuestionComment not found!' });
-
-        const updatedQuestionComment = await QuestionComment.findByIdAndUpdate(req.params.id, { status: 'Rejected' }, { new: true });
-        res.status(200).json(updatedQuestionComment);
-    } catch (error) {
-        handleError(res, error);
-    }
-}
+    await updateQuestionCommentStatus(req.params.id, 'Rejected', res);
+};
 
 exports.updateQuestionComment = async (req, res) => {
     try {

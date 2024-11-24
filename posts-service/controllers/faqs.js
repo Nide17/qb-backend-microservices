@@ -14,6 +14,19 @@ const findFaqById = async (id, res, selectFields = '') => {
     }
 };
 
+// Helper function to handle findByIdAndUpdate operations
+const handleFindByIdAndUpdate = async (id, update, res) => {
+    try {
+        const faq = await Faq.findById(id);
+        if (!faq) return res.status(404).json({ msg: 'Faq not found!' });
+
+        const updatedFaq = await Faq.findByIdAndUpdate(id, update, { new: true });
+        res.status(200).json(updatedFaq);
+    } catch (error) {
+        handleError(res, error);
+    }
+};
+
 exports.getFaqs = async (req, res) => {
     try {
         const faqs = await Faq.find().sort({ createdAt: -1 });
@@ -37,26 +50,20 @@ exports.getCreatedBy = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-}
+};
 
 exports.createFaq = async (req, res) => {
-
-    const { title, answer, created_by } = req.body
+    const { title, answer, created_by } = req.body;
 
     // Simple validation
     if (!title || !created_by || !answer) {
-        return res.status(400).json({ msg: 'Please fill required fields' })
+        return res.status(400).json({ msg: 'Please fill required fields' });
     }
 
     try {
-        const newFaq = new Faq({
-            title,
-            answer,
-            created_by
-        })
-
-        const savedFaq = await newFaq.save()
-        if (!savedFaq) throw Error('Something went wrong during creation!')
+        const newFaq = new Faq({ title, answer, created_by });
+        const savedFaq = await newFaq.save();
+        if (!savedFaq) throw Error('Something went wrong during creation!');
 
         res.status(200).json({
             _id: savedFaq._id,
@@ -64,35 +71,18 @@ exports.createFaq = async (req, res) => {
             created_by: savedFaq.created_by,
             answer: savedFaq.answer,
             createdAt: savedFaq.createdAt
-        })
-
+        });
     } catch (err) {
         handleError(res, err);
     }
 };
 
 exports.addFaqVidLink = async (req, res) => {
-    try {
-        const faq = await Faq.findById(req.params.id);
-        if (!faq) return res.status(404).json({ msg: 'Faq not found!' });
-
-        const updatedFaq = await Faq.findByIdAndUpdate(req.params.id, { $push: { video_links: req.body } }, { new: true });
-        res.status(200).json(updatedFaq);
-    } catch (error) {
-        handleError(res, error);
-    }
+    await handleFindByIdAndUpdate(req.params.id, { $push: { video_links: req.body } }, res);
 };
 
 exports.updateFaq = async (req, res) => {
-    try {
-        const faq = await Faq.findById(req.params.id);
-        if (!faq) return res.status(404).json({ msg: 'Faq not found!' });
-
-        const updatedFaq = await Faq.findByIdAndUpdate(req.params.id, req.body, { new: true });
-        res.status(200).json(updatedFaq);
-    } catch (error) {
-        handleError(res, error);
-    }
+    await handleFindByIdAndUpdate(req.params.id, req.body, res);
 };
 
 exports.deleteFaq = async (req, res) => {
@@ -110,13 +100,5 @@ exports.deleteFaq = async (req, res) => {
 };
 
 exports.deleteFaqVideo = async (req, res) => {
-    try {
-        const faq = await Faq.findById(req.params.id);
-        if (!faq) return res.status(404).json({ msg: 'Faq not found!' });
-
-        const updatedFaq = await Faq.findByIdAndUpdate(req.params.id, { $pull: { video_links: req.body } }, { new: true });
-        res.status(200).json(updatedFaq);
-    } catch (error) {
-        handleError(res, error);
-    }
+    await handleFindByIdAndUpdate(req.params.id, { $pull: { video_links: req.body } }, res);
 };

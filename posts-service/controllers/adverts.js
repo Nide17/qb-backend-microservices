@@ -1,4 +1,4 @@
-const { S3 } = require("@aws-sdk/client-s3")
+const { S3 } = require("@aws-sdk/client-s3");
 const Advert = require("../models/Advert.js");
 
 const s3Config = new S3({
@@ -6,13 +6,13 @@ const s3Config = new S3({
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
     Bucket: process.env.S3_BUCKET,
     region: process.env.AWS_REGION
-})
+});
 
 // Helper function to handle errors
 const handleError = (res, err, status = 400) => {
     console.error(err);
     res.status(status).json({ msg: err.message });
-}
+};
 
 // Helper function to find advert by ID
 const findAdvertById = async (id, res, selectFields = '') => {
@@ -23,6 +23,15 @@ const findAdvertById = async (id, res, selectFields = '') => {
     } catch (err) {
         return handleError(res, err);
     }
+};
+
+// Helper function to delete image from S3
+const deleteImageFromS3 = async (imagePath) => {
+    const params = {
+        Bucket: process.env.S3_BUCKET,
+        Key: imagePath.split('/').pop()
+    };
+    return s3Config.deleteObject(params).promise();
 };
 
 exports.getAdverts = async (req, res) => {
@@ -58,57 +67,49 @@ exports.getCreatedBy = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-}
+};
 
 exports.createAdvert = async (req, res) => {
-
-    const { caption, phone, owner, email, link } = req.body
+    const { caption, phone, owner, email, link } = req.body;
 
     // Simple validation
     if (!caption || !owner || !email || !phone) {
-        return res.status(400).json({ msg: 'Please fill required fields' })
+        return res.status(400).json({ msg: 'Please fill required fields' });
     }
 
     if (!req.file) {
-        //If the file is not uploaded, then throw custom error with message: FILE_MISSING
-        throw Error('FILE_MISSING')
+        return handleError(res, new Error('FILE_MISSING'));
     }
 
-    else {
+    const ad_file = req.file;
 
-        //If the file is uploaded
-        const ad_file = req.file
+    try {
+        const newAdvert = new Advert({
+            caption,
+            phone,
+            owner,
+            email,
+            link,
+            advert_image: ad_file.location ? ad_file.location : ad_file.path
+        });
 
-        try {
-            const newAdvert = new Advert({
-                caption,
-                phone,
-                owner,
-                email,
-                link,
-                // advert_image: ad_file.location
-                // IF WORKING LOCALLY
-                advert_image: ad_file.location ? ad_file.location : ad_file.path
-            })
+        const savedAdvert = await newAdvert.save();
+        if (!savedAdvert) throw new Error('Something went wrong during creation!');
 
-            const savedAdvert = await newAdvert.save()
-            if (!savedAdvert) throw Error('Something went wrong during creation!')
-
-            res.status(200).json({
-                _id: savedAdvert._id,
-                caption: savedAdvert.caption,
-                owner: savedAdvert.owner,
-                phone: savedAdvert.phone,
-                email: savedAdvert.email,
-                link: savedAdvert.link,
-                advert_image: savedAdvert.advert_image,
-                createdAt: savedAdvert.createdAt
-            })
-        } catch (err) {
-            handleError(res, err);
-        }
+        res.status(200).json({
+            _id: savedAdvert._id,
+            caption: savedAdvert.caption,
+            owner: savedAdvert.owner,
+            phone: savedAdvert.phone,
+            email: savedAdvert.email,
+            link: savedAdvert.link,
+            advert_image: savedAdvert.advert_image,
+            createdAt: savedAdvert.createdAt
+        });
+    } catch (err) {
+        handleError(res, err);
     }
-}
+};
 
 exports.updateAdvert = async (req, res) => {
     try {
@@ -136,39 +137,17 @@ exports.updateAdvertStatus = async (req, res) => {
 
 exports.deleteAdvert = async (req, res) => {
     try {
-        const advert = await Advert.findById(req.params.id)
-        if (!advert) throw Error('advert is not found!')
+        const advert = await Advert.findById(req.params.id);
+        if (!advert) throw new Error('Advert not found!');
 
-        const params = advert.advert_image ?
-            {
-                Bucket: process.env.S3_BUCKET,
-                Key: advert.advert_image.split('/').pop() //if any sub folder-> path/of/the/folder.ext
-            } :
-            null
-        // Deleting  image
-        try {
-            params ?
-                s3Config.deleteObject(params, (err, data) => {
-                    if (err) {
-                        console.log(err, err.stack); // an error occurred
-                    }
-                    else {
-                        console.log(params.Key + ' deleted!');
-                    }
-                }) : null
-
-        }
-        catch (err) {
-            console.log('ERROR in file Deleting : ' + JSON.stringify(err))
+        if (advert.advert_image) {
+            await deleteImageFromS3(advert.advert_image);
         }
 
-        // Delete Advert
-        const removedAdvert = await Advert.deleteOne({ _id: req.params.id })
+        const removedAdvert = await Advert.deleteOne({ _id: req.params.id });
+        if (!removedAdvert) throw new Error('Something went wrong while deleting!');
 
-        if (!removedAdvert)
-            throw Error('Something went wrong while deleting!')
-
-        res.status(200).json({ msg: `${removedAdvert.caption} is Deleted!` })
+        res.status(200).json({ msg: `${removedAdvert.caption} is Deleted!` });
     } catch (err) {
         handleError(res, err);
     }

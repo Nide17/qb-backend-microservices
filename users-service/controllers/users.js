@@ -30,6 +30,16 @@ const findUserById = async (id, res, selectFields = '') => {
     }
 }
 
+// Helper function to generate JWT token
+const generateToken = (user) => {
+    return jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '2h' })
+}
+
+// Helper function to update user token
+const updateUserToken = async (user, token) => {
+    return await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
+}
+
 exports.getUsers = async (req, res) => {
     try {
         const users = await User.find().sort({ createdAt: -1 })
@@ -89,10 +99,10 @@ exports.login = async (req, res) => {
 
         jwt.verify(user.current_token, process.env.JWT_SECRET, async (err, decoded) => {
             if (!user.current_token || err) {
-                const token = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '2h' })
+                const token = generateToken(user)
                 if (!token) throw Error('Could not sign in, try again!')
 
-                const updatedUser = await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
+                const updatedUser = await updateUserToken(user, token)
                 if (!updatedUser) throw Error('Something went wrong updating current token date')
 
                 res.status(200).json({
@@ -111,10 +121,10 @@ exports.login = async (req, res) => {
                         status: 401
                     })
                 } else {
-                    const token1 = jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '2h' })
+                    const token1 = generateToken(user)
                     if (!token1) throw Error('Could not sign in, try again!')
 
-                    const confirmedUser = await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token1 } }, { new: true })
+                    const confirmedUser = await updateUserToken(user, token1)
                     if (!confirmedUser) throw Error('Something went wrong updating current token date')
 
                     res.status(200).json({
@@ -200,13 +210,9 @@ exports.verifyOTP = async (req, res) => {
         if (otp !== usr.otp) return res.status(400).json({ msg: "Invalid OTP." })
 
         await User.findOneAndUpdate({ email }, { verified: true })
-        const token = jwt.sign({ _id: usr._id, role: usr.role }, process.env.JWT_SECRET, { expiresIn: '2h' })
+        const token = generateToken(usr)
 
-        const updatedUser = await User.findByIdAndUpdate(
-            { _id: usr._id },
-            { $set: { current_token: token } },
-            { new: true }
-        )
+        const updatedUser = await updateUserToken(usr, token)
         if (!updatedUser) throw Error('Something went wrong updating current token date')
 
         res.status(200).json({

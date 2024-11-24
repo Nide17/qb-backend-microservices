@@ -20,6 +20,28 @@ const findQuizById = async (id, res, selectFields = '') => {
     }
 };
 
+// Helper function to get quizzes with pagination
+const getQuizzesWithPagination = async (query, pageNo, pageSize, res) => {
+    const skip = pageSize * (pageNo - 1);
+    try {
+        const totalQuizzes = await Quiz.countDocuments(query);
+        const quizzes = await Quiz.find(query)
+            .sort({ creation_date: -1 })
+            .populate('category questions')
+            .limit(pageSize)
+            .skip(skip);
+
+        if (!quizzes.length) throw new Error('No quizzes found');
+
+        res.status(200).json({
+            totalPages: Math.ceil(totalQuizzes / pageSize),
+            quizzes
+        });
+    } catch (err) {
+        handleError(res, err);
+    }
+};
+
 exports.getQuizzes = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = parseInt(req.query.skip) || 0;
@@ -41,26 +63,12 @@ exports.getQuizzes = async (req, res) => {
 exports.getPaginatedQuizzes = async (req, res) => {
     const PAGE_SIZE = 12;
     const pageNo = parseInt(req.query.pageNo || "0");
-    const skip = PAGE_SIZE * (pageNo - 1);
 
-    try {
-        const totalQuizzes = req.user.role === 'Creator'
-            ? await Quiz.countDocuments({ created_by: req.user._id })
-            : await Quiz.countDocuments({});
+    const query = req.user.role === 'Creator'
+        ? { created_by: req.user._id }
+        : {};
 
-        const quizzes = req.user.role === 'Creator'
-            ? await Quiz.find({ created_by: req.user._id }).sort({ creation_date: -1 }).populate('category questions').limit(PAGE_SIZE).skip(skip)
-            : await Quiz.find({}).sort({ creation_date: -1 }).populate('category questions').limit(PAGE_SIZE).skip(skip);
-
-        if (!quizzes.length) throw new Error('No quizzes found');
-
-        res.status(200).json({
-            totalPages: Math.ceil(totalQuizzes / PAGE_SIZE),
-            quizzes
-        });
-    } catch (err) {
-        handleError(res, err);
-    }
+    await getQuizzesWithPagination(query, pageNo, PAGE_SIZE, res);
 };
 
 exports.getOneQuiz = async (req, res) => {

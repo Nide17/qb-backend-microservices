@@ -14,6 +14,14 @@ const findPostsCategoryById = async (id, res, selectFields = '') => {
     }
 };
 
+// Helper function to validate request body
+const validateRequestBody = (body, requiredFields) => {
+    for (const field of requiredFields) {
+        if (!body[field]) return `Please fill required fields: ${field}`;
+    }
+    return null;
+};
+
 exports.getPostsCategories = async (req, res) => {
     try {
         const postsCategories = await PostsCategory.find().sort({ createdAt: -1 });
@@ -30,23 +38,15 @@ exports.getOnePostsCategory = async (req, res) => {
 };
 
 exports.createPostsCategory = async (req, res) => {
+    const { title, answer, created_by } = req.body;
 
-    const { title, answer, created_by } = req.body
-
-    // Simple validation
-    if (!title || !created_by || !answer) {
-        return res.status(400).json({ msg: 'Please fill required fields' })
-    }
+    const validationError = validateRequestBody(req.body, ['title', 'answer', 'created_by']);
+    if (validationError) return res.status(400).json({ msg: validationError });
 
     try {
-        const newPostsCategory = new PostsCategory({
-            title,
-            answer,
-            created_by
-        })
-
-        const savedPostsCategory = await newPostsCategory.save()
-        if (!savedPostsCategory) throw Error('Something went wrong during creation!')
+        const newPostsCategory = new PostsCategory({ title, answer, created_by });
+        const savedPostsCategory = await newPostsCategory.save();
+        if (!savedPostsCategory) throw Error('Something went wrong during creation!');
 
         res.status(200).json({
             _id: savedPostsCategory._id,
@@ -54,8 +54,7 @@ exports.createPostsCategory = async (req, res) => {
             created_by: savedPostsCategory.created_by,
             answer: savedPostsCategory.answer,
             createdAt: savedPostsCategory.createdAt
-        })
-
+        });
     } catch (err) {
         handleError(res, err);
     }

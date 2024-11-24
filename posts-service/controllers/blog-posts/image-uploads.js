@@ -40,47 +40,42 @@ exports.getImageUploadsByOwner = async (req, res) => {
 };
 
 exports.createImageUpload = async (req, res) => {
-    const { imageTitle, owner } = req.body
+    const { imageTitle, owner } = req.body;
 
     // Simple validation
     if (!imageTitle || !owner) {
-        return res.status(400).json({ msg: imageTitle })
+        return res.status(400).json({ msg: 'Image title and owner are required' });
     }
 
     if (!req.file) {
-        //If the file is not uploaded, then throw custom error with message: FILE_MISSING
-        throw Error('FILE_MISSING')
+        return handleError(res, new Error('FILE_MISSING'));
     }
 
-    else {
-        //If the file is uploaded
-        const imgUp_file = req.file
+    const imgUp_file = req.file;
 
-        try {
-            const imgUp = await ImageUpload.findOne({ imageTitle })
-            if (imgUp) throw Error('Failed! Image with that name already exists!')
+    try {
+        const imgUp = await ImageUpload.findOne({ imageTitle });
+        if (imgUp) return handleError(res, new Error('Failed! Image with that name already exists!'));
 
-            const newImgUp = new ImageUpload({
-                imageTitle,
-                uploadImage: imgUp_file.location,
-                owner
-            })
+        const newImgUp = new ImageUpload({
+            imageTitle,
+            uploadImage: imgUp_file.location,
+            owner
+        });
 
-            const savedImgUp = await newImgUp.save()
+        const savedImgUp = await newImgUp.save();
+        if (!savedImgUp) return handleError(res, new Error('Something went wrong during creation! file size should not exceed 1MB'));
 
-            if (!savedImgUp) throw Error('Something went wrong during creation! file size should not exceed 1MB')
+        res.status(200).json({
+            _id: savedImgUp._id,
+            imageTitle: savedImgUp.imageTitle,
+            uploadImage: savedImgUp.uploadImage,
+            owner: savedImgUp.owner,
+            createdAt: savedImgUp.createdAt,
+        });
 
-            res.status(200).json({
-                _id: savedImgUp._id,
-                imageTitle: savedImgUp.imageTitle,
-                uploadImage: savedImgUp.uploadImage,
-                owner: savedImgUp.owner,
-                createdAt: savedImgUp.createdAt,
-            })
-
-        } catch (err) {
-            handleError(res, err);
-        }
+    } catch (err) {
+        handleError(res, err);
     }
 };
 

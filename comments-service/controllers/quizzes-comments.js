@@ -14,8 +14,18 @@ const findQuizCommentById = async (id, res, selectFields = '') => {
     }
 };
 
-exports.getQuizzesComments = async (req, res) => {
+// Helper function to validate required fields
+const validateRequiredFields = (fields, res) => {
+    for (const field of fields) {
+        if (!field.value) {
+            res.status(400).json({ msg: `Please fill required field: ${field.name}` });
+            return false;
+        }
+    }
+    return true;
+};
 
+exports.getQuizzesComments = async (req, res) => {
     try {
         const quizComments = await QuizComment.find();
         res.status(200).json(quizComments);
@@ -36,34 +46,25 @@ exports.getCommentsByQuiz = async (req, res) => {
     } catch (err) {
         handleError(res, err);
     }
-}
+};
 
 exports.createQuizComment = async (req, res) => {
-
-    const { comment, quiz, sender } = req.body
+    const { comment, quiz, sender } = req.body;
 
     // Simple validation
-    if (!comment || !sender || !quiz) {
-        return res.status(400).json({ msg: 'Please fill required fields' })
-    }
+    if (!validateRequiredFields([{ name: 'comment', value: comment }, { name: 'quiz', value: quiz }, { name: 'sender', value: sender }], res)) return;
 
     try {
-        const newQuizComment = new QuizComment({
-            comment,
-            quiz,
-            sender
-        })
-
-        const savedQuizComment = await newQuizComment.save()
-        if (!savedQuizComment) throw Error('Something went wrong during creation!')
+        const newQuizComment = new QuizComment({ comment, quiz, sender });
+        const savedQuizComment = await newQuizComment.save();
+        if (!savedQuizComment) throw Error('Something went wrong during creation!');
 
         res.status(200).json({
             _id: savedQuizComment._id,
             comment: savedQuizComment.comment,
             sender: savedQuizComment.sender,
             quiz: savedQuizComment.quiz
-        })
-
+        });
     } catch (err) {
         handleError(res, err);
     }

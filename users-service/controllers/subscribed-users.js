@@ -14,6 +14,16 @@ const findSubscribedUserById = async (id, res, selectFields = '') => {
     }
 };
 
+// Helper function to validate request body
+const validateRequestBody = (body, requiredFields) => {
+    for (const field of requiredFields) {
+        if (!body[field]) {
+            return `Please fill all fields: ${requiredFields.join(', ')}`;
+        }
+    }
+    return null;
+};
+
 exports.getSubscribedUsers = async (req, res) => {
     try {
         const subscribedUsers = await SubscribedUser.find().sort({ createdAt: -1 });
@@ -30,30 +40,28 @@ exports.getOneSubscribedUser = async (req, res) => {
 };
 
 exports.createSubscribedUser = async (req, res) => {
+    const { name, email } = req.body;
 
-    const { name, email } = req.body
-
-    // Simple validation
-    if (!name || !email) {
-        return res.status(400).json({ msg: 'Please fill all fields' })
+    const validationError = validateRequestBody(req.body, ['name', 'email']);
+    if (validationError) {
+        return res.status(400).json({ msg: validationError });
     }
 
     try {
-        const subscriber = await SubscribedUser.findOne({ email })
+        const subscriber = await SubscribedUser.findOne({ email });
         if (subscriber) {
-            return res.status(400).json({ msg: 'You are already subscribed!' })
+            return res.status(400).json({ msg: 'You are already subscribed!' });
         }
 
-        const newSubscriber = new SubscribedUser({ name, email })
-
-        const savedSubscriber = await newSubscriber.save()
+        const newSubscriber = new SubscribedUser({ name, email });
+        const savedSubscriber = await newSubscriber.save();
         if (!savedSubscriber) {
-            return res.status(400).json({ msg: 'Failed to subscribe!' })
+            return res.status(400).json({ msg: 'Failed to subscribe!' });
         }
 
         // Sending e-mail to subscribed user
         const clientURL = process.env.NODE_ENV === 'production' ?
-            'https://quizblog.rw' : 'http://localhost:5173'
+            'https://quizblog.rw' : 'http://localhost:5173';
 
         sendEmail(
             savedSubscriber.email,
@@ -62,9 +70,10 @@ exports.createSubscribedUser = async (req, res) => {
                 name: savedSubscriber.name,
                 unsubscribeLink: `${clientURL}/unsubscribe`
             },
-            "./template/subscribe.handlebars")
+            "./template/subscribe.handlebars"
+        );
 
-        res.status(200).json(savedSubscriber)
+        res.status(200).json(savedSubscriber);
     } catch (err) {
         handleError(res, err);
     }
@@ -72,8 +81,8 @@ exports.createSubscribedUser = async (req, res) => {
 
 exports.updateSubscribedUser = async (req, res) => {
     try {
-        const subscribedUser = await SubscribedUser.findById(req.params.id);
-        if (!subscribedUser) return res.status(404).json({ msg: 'SubscribedUser not found!' });
+        const subscribedUser = await findSubscribedUserById(req.params.id, res);
+        if (!subscribedUser) return;
 
         const updatedSubscribedUser = await SubscribedUser.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedSubscribedUser);
@@ -84,8 +93,8 @@ exports.updateSubscribedUser = async (req, res) => {
 
 exports.deleteSubscribedUser = async (req, res) => {
     try {
-        const subscribedUser = await SubscribedUser.findById(req.params.id);
-        if (!subscribedUser) throw Error('SubscribedUser not found!');
+        const subscribedUser = await findSubscribedUserById(req.params.id, res);
+        if (!subscribedUser) return;
 
         const removedSubscribedUser = await SubscribedUser.deleteOne({ _id: req.params.id });
         if (removedSubscribedUser.deletedCount === 0) throw Error('Something went wrong while deleting!');

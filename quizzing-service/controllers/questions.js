@@ -1,6 +1,6 @@
 const Question = require("../models/Question");
 const Quiz = require("../models/Quiz");
-const { S3 } = require("@aws-sdk/client-s3")
+const { S3 } = require("@aws-sdk/client-s3");
 
 // AWS S3 Configuration
 const s3Config = new S3({
@@ -42,6 +42,12 @@ const deleteImageFromS3 = async (imageUrl) => {
             }
         });
     });
+};
+
+// Helper function to update quiz questions
+const updateQuizQuestions = async (quizId, questionId, action) => {
+    const update = action === 'add' ? { $addToSet: { questions: questionId } } : { $pull: { questions: questionId } };
+    await Quiz.updateOne({ _id: quizId }, update);
 };
 
 exports.getQuestions = async (req, res) => {
@@ -93,10 +99,7 @@ exports.createQuestion = async (req, res) => {
         const savedQuestion = await newQuestion.save();
 
         // Update the Quiz on Question creation
-        await Quiz.updateOne(
-            { "_id": quiz },
-            { $addToSet: { "questions": savedQuestion._id } }
-        );
+        await updateQuizQuestions(quiz, savedQuestion._id, 'add');
 
         if (!savedQuestion) throw Error('Something went wrong during creation!');
 
@@ -123,16 +126,10 @@ exports.updateQuestion = async (req, res) => {
             }, { new: true });
 
             // Delete Question in old quiz
-            await Quiz.updateOne(
-                { _id: oldQuizID },
-                { $pull: { questions: qtn._id } }
-            );
+            await updateQuizQuestions(oldQuizID, qtn._id, 'remove');
 
             // Update the Quiz on Question updating
-            await Quiz.updateOne(
-                { "_id": newQuiz },
-                { $addToSet: { "questions": qtn._id } }
-            );
+            await updateQuizQuestions(newQuiz, qtn._id, 'add');
 
             res.status(200).json(updatedQuestion);
         } else {
@@ -170,10 +167,7 @@ exports.deleteQuestion = async (req, res) => {
         await deleteImageFromS3(question.question_image);
 
         // Remove question from questions of the quiz
-        await Quiz.updateOne(
-            { _id: question.quiz },
-            { $pull: { questions: question._id } }
-        );
+        await updateQuizQuestions(question.quiz, question._id, 'remove');
 
         // Delete the question
         const removedQuestion = await Question.deleteOne({ _id: req.params.id });
