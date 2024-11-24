@@ -34,5 +34,4 @@ const FaqSchema = new Schema({
 },
     { timestamps: true });
 
-const Faq = mongoose.model("Faq", FaqSchema);
-module.exports = Faq
+module.exports = mongoose.model("Faq", FaqSchema);

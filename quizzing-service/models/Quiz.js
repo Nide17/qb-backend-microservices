@@ -60,5 +60,4 @@ QuizSchema.pre("validate", function (next) {
   next()
 })
 
-const Quiz = mongoose.model("Quiz", QuizSchema);
-module.exports = Quiz
+module.exports = mongoose.model("Quiz", QuizSchema);

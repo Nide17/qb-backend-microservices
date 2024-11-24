@@ -45,6 +45,9 @@ app.use('/api/posts-ategories', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/image-ploads', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/blog-posts-views', routeToService(process.env.POSTS_SERVICE_URL));
 
+// Feedbacks Service
+app.use('/api/feedbacks', routeToService(process.env.FEEDBACKS_SERVICE_URL));
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

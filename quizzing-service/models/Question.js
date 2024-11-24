@@ -66,5 +66,4 @@ QuestionSchema.pre("validate", function (next) {
     next()
 })
 
-const Question = mongoose.model("Question", QuestionSchema);
-module.exports = Question
+module.exports = mongoose.model("Question", QuestionSchema);

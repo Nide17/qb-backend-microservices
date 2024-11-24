@@ -19,5 +19,4 @@ const PswdResetTokenSchema = new Schema({
     },
 });
 
-const PswdResetToken = mongoose.model('PswdResetToken', PswdResetTokenSchema)
-module.exports = PswdResetToken
+module.exports = mongoose.model('PswdResetToken', PswdResetTokenSchema)

@@ -37,5 +37,4 @@ const AdvertSchema = new Schema({
 },
     { timestamps: true });
 
-const Advert = mongoose.model("Advert", AdvertSchema);
-module.exports = Advert
+module.exports = mongoose.model("Advert", AdvertSchema);
