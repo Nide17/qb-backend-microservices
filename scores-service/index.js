@@ -13,7 +13,7 @@ const httpServer = createServer(app)
 const allowList = [
     'http://localhost:5173',
     'http://localhost:4000',
-    'http://localhost:5005',
+    'http://localhost:5006',
 ]
 
 const corsOptions = {
@@ -37,19 +37,16 @@ app.use(cors(corsOptions))
 app.use(express.json())
 
 // Routes
-app.use("/api/course-categories", require('./routes/course-categories'))
-app.use("/api/courses", require('./routes/courses'))
-app.use("/api/chapters", require('./routes/chapters'))
-app.use("/api/notes", require('./routes/notes'))
+app.use("/api/scores", require('./routes/scores'))
 
 // home route
-app.get('/', (req, res) => { res.send('Welcome to QB courses API') })
+app.get('/', (req, res) => { res.send('Welcome to QB scores API') })
 
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
-        httpServer.listen(process.env.PORT || 5005, () => {
-            console.log(`Courses service is running on port ${process.env.PORT || 5005}, and MongoDB is connected`)
+        httpServer.listen(process.env.PORT || 5006, () => {
+            console.log(`Scores service is running on port ${process.env.PORT || 5006}, and MongoDB is connected`)
         })
     })
     .catch((err) => console.log(err))

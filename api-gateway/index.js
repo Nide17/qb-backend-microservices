@@ -38,7 +38,7 @@ app.use('/api/users', routeToService(process.env.USERS_SERVICE_URL));
 app.use('/api/subscribed-users', routeToService(process.env.USERS_SERVICE_URL));
 
 // Quizzing Service
-app.use('/api/categories', routeToService(process.env.QUIZZING_SERVICE_URL));
+app.use('/api/course-', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/quizzes', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
 
@@ -46,16 +46,9 @@ app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/adverts', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/faqs', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/blog-posts', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/posts-ategories', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/posts-course-', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/image-ploads', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/blog-posts-views', routeToService(process.env.POSTS_SERVICE_URL));
-
-// Feedbacks Service
-app.use('/api/feedbacks', routeToService(process.env.FEEDBACKS_SERVICE_URL));
-
-// Comments Service
-app.use('/api/quizzes-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
-app.use('/api/questions-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
 
 // Schools Service
 app.use('/api/schools', routeToService(process.env.SCHOOLS_SERVICE_URL));
@@ -63,10 +56,16 @@ app.use('/api/levels', routeToService(process.env.SCHOOLS_SERVICE_URL));
 app.use('/api/faculties', routeToService(process.env.SCHOOLS_SERVICE_URL));
 
 // Courses Service
-app.use('/api/categories', routeToService(process.env.COURSES_SERVICE_URL));
+app.use('/api/course-categories', routeToService(process.env.COURSES_SERVICE_URL));
 app.use('/api/courses', routeToService(process.env.COURSES_SERVICE_URL));
 app.use('/api/chapters', routeToService(process.env.COURSES_SERVICE_URL));
 app.use('/api/notes', routeToService(process.env.COURSES_SERVICE_URL));
+
+// Scores Service
+app.use('/api/scores', routeToService(process.env.SCORES_SERVICE_URL));
+
+// Downloads Service
+app.use('/api/downloads', routeToService(process.env.DOWNLOADS_SERVICE_URL));
 
 // Contacts Service
 app.use('/api/contacts', routeToService(process.env.CONTACTS_SERVICE_URL));
@@ -74,8 +73,12 @@ app.use('/api/broadcasts', routeToService(process.env.CONTACTS_SERVICE_URL));
 app.use('/api/chat-rooms', routeToService(process.env.CONTACTS_SERVICE_URL));
 app.use('/api/room-messages', routeToService(process.env.CONTACTS_SERVICE_URL));
 
-// Downloads Service
-app.use('/api/downloads', routeToService(process.env.DOWNLOADS_SERVICE_URL));
+// Feedbacks Service
+app.use('/api/feedbacks', routeToService(process.env.FEEDBACKS_SERVICE_URL));
+
+// Comments Service
+app.use('/api/quizzes-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
+app.use('/api/questions-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
