@@ -13,7 +13,7 @@ const BlogPostSchema = new Schema({
     },
     postsCategory: {
         type: Schema.Types.ObjectId,
-        ref: 'postsCategory'
+        ref: 'PostsCategory'
     },
     post_image: String,
     markdown: {

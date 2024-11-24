@@ -37,7 +37,7 @@ exports.getLimitedNotes = async (req, res) => {
 
 exports.getNotesByCategory = async (req, res) => {
     try {
-        const notes = await Notes.find({ category: req.params.id });
+        const notes = await Notes.find({ courseCategory: req.params.id });
         res.status(200).json(notes);
     } catch (err) {
         handleError(res, err);

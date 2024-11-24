@@ -17,8 +17,8 @@ const findChapterById = async (id, res, selectFields = '') => {
 
 // Helper function to validate chapter fields
 const validateChapterFields = (fields) => {
-    const { title, description, category, course } = fields;
-    if (!title || !description || !category || !course) {
+    const { title, description, courseCategory, course } = fields;
+    if (!title || !description || !courseCategory || !course) {
         return 'Please fill all fields';
     }
     return null;
@@ -55,14 +55,14 @@ exports.createChapter = async (req, res) => {
     }
 
     try {
-        const { title, description, category, course, created_by } = req.body;
+        const { title, description, courseCategory, course, created_by } = req.body;
         const chapter = await Chapter.findOne({ title });
         if (chapter) throw Error('Chapter already exists!');
 
         const newChapter = new Chapter({
             title,
             description,
-            category,
+            courseCategory,
             course,
             created_by
         });

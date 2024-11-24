@@ -12,7 +12,7 @@ const LevelSchema = new Schema({
     },
     school: {
         type: Schema.Types.ObjectId,
-        ref: 'school'
+        ref: 'School'
     }
 }, { timestamps: true });
 

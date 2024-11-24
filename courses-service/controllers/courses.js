@@ -28,7 +28,7 @@ exports.getCourses = async (req, res) => {
 
 exports.getCoursesByCategory = async (req, res) => {
     try {
-        const courses = await Course.find({ category: req.params.id });
+        const courses = await Course.find({ courseCategory: req.params.id });
         res.status(200).json(courses);
     } catch (err) {
         handleError(res, err);
@@ -41,10 +41,10 @@ exports.getOneCourse = async (req, res) => {
 };
 
 exports.createCourse = async (req, res) => {
-    const { title, description, category, created_by } = req.body;
+    const { title, description, courseCategory, created_by } = req.body;
 
     // Simple validation
-    if (!title || !description || !category) {
+    if (!title || !description || !courseCategory) {
         return res.status(400).json({ msg: 'Please fill all fields' });
     }
 
@@ -55,7 +55,7 @@ exports.createCourse = async (req, res) => {
         const newCourse = new Course({
             title,
             description,
-            category,
+            courseCategory,
             created_by
         });
 
@@ -66,7 +66,7 @@ exports.createCourse = async (req, res) => {
             _id: savedCourse._id,
             title: savedCourse.title,
             description: savedCourse.description,
-            category: savedCourse.category,
+            courseCategory: savedCourse.courseCategory,
             created_by: savedCourse.created_by,
             createdAt: savedCourse.createdAt,
         });

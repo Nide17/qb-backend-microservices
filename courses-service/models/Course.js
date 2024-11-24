@@ -15,9 +15,9 @@ const CourseSchema = new Schema({
         type: String,
         required: true
     },
-    category: {
+    courseCategory: {
         type: Schema.Types.ObjectId,
-        ref: 'category'
+        ref: 'Category'
     },
     created_by: {
         type: Schema.Types.ObjectId,

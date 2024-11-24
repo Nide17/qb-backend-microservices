@@ -19,15 +19,15 @@ const NotesSchema = new Schema({
     notes_file: String,
     chapter: {
         type: Schema.Types.ObjectId,
-        ref: 'chapter'
+        ref: 'Chapter'
     },
     course: {
         type: Schema.Types.ObjectId,
-        ref: 'course'
+        ref: 'Course'
     },
-    category: {
+    courseCategory: {
         type: Schema.Types.ObjectId,
-        ref: 'category'
+        ref: 'Category'
     },
     slug: {
         type: String,

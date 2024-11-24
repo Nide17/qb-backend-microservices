@@ -13,11 +13,11 @@ const FacultySchema = new Schema({
     },
     school: {
         type: Schema.Types.ObjectId,
-        ref: 'school'
+        ref: 'School'
     },
     level: {
         type: Schema.Types.ObjectId,
-        ref: 'level'
+        ref: 'Level'
     },
     years: [
         {
