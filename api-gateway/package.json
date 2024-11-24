@@ -22,8 +22,10 @@
     "dev-courses": "cd ../courses-service && npm run courses",
     "contacts": "cd ../contacts-service && npm start",
     "dev-contacts": "cd ../contacts-service && npm run contacts",
-    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run feedbacks\" \"npm run comments\" \"npm run schools\" \"npm run courses\" \"npm run contacts\"",
-    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-feedbacks\" \"npm run dev-comments\" \"npm run dev-schools\" \"npm run dev-courses\" \"npm run dev-contacts\""
+    "downloads": "cd ../downloads-service && npm start",
+    "dev-downloads": "cd ../downloads-service && npm run downloads",
+    "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run feedbacks\" \"npm run comments\" \"npm run schools\" \"npm run courses\" \"npm run contacts\" \"npm run downloads\"",
+    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-feedbacks\" \"npm run dev-comments\" \"npm run dev-schools\" \"npm run dev-courses\" \"npm run dev-contacts\" \"npm run dev-downloads\""
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",

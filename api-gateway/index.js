@@ -16,6 +16,8 @@ app.get('/api/health', (req, res) => {
 
 const routeToService = (serviceUrl) => async (req, res) => {
 
+    console.log(`Routing request to ${serviceUrl}${req.originalUrl}`);
+
     try {
         const response = await axios({
             method: req.method,
@@ -25,6 +27,7 @@ const routeToService = (serviceUrl) => async (req, res) => {
         });
         res.status(response.status).send(response.data);
     } catch (error) {
+
         const response = error.response;
         res.status(response?.status || 500).send({ error: response?.data?.msg || 'Something went wrong' });
     }
@@ -70,6 +73,9 @@ app.use('/api/contacts', routeToService(process.env.CONTACTS_SERVICE_URL));
 app.use('/api/broadcasts', routeToService(process.env.CONTACTS_SERVICE_URL));
 app.use('/api/chat-rooms', routeToService(process.env.CONTACTS_SERVICE_URL));
 app.use('/api/room-messages', routeToService(process.env.CONTACTS_SERVICE_URL));
+
+// Downloads Service
+app.use('/api/downloads', routeToService(process.env.DOWNLOADS_SERVICE_URL));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

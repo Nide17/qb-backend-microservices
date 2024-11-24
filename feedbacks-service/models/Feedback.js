@@ -19,9 +19,6 @@ const FeedbackSchema = new Schema({
   quiz: {
     type: Schema.Types.ObjectId
   }
-},
-  {
-    timestamps: true
-  });
+}, { timestamps: true });
 
 module.exports = mongoose.model('Feedback', FeedbackSchema);
