@@ -15,6 +15,7 @@ app.get('/api/health', (req, res) => {
 });
 
 const routeToService = (serviceUrl) => async (req, res) => {
+
     try {
         const response = await axios({
             method: req.method,
@@ -24,7 +25,8 @@ const routeToService = (serviceUrl) => async (req, res) => {
         });
         res.status(response.status).send(response.data);
     } catch (error) {
-        res.status(error.response?.status || 500).send({ error: error.message });
+        const response = error.response;
+        res.status(response?.status || 500).send({ error: response?.data?.msg || 'Something went wrong' });
     }
 };
 
@@ -62,6 +64,12 @@ app.use('/api/categories', routeToService(process.env.COURSES_SERVICE_URL));
 app.use('/api/courses', routeToService(process.env.COURSES_SERVICE_URL));
 app.use('/api/chapters', routeToService(process.env.COURSES_SERVICE_URL));
 app.use('/api/notes', routeToService(process.env.COURSES_SERVICE_URL));
+
+// Contacts Service
+app.use('/api/contacts', routeToService(process.env.CONTACTS_SERVICE_URL));
+app.use('/api/broadcasts', routeToService(process.env.CONTACTS_SERVICE_URL));
+app.use('/api/chat-rooms', routeToService(process.env.CONTACTS_SERVICE_URL));
+app.use('/api/room-messages', routeToService(process.env.CONTACTS_SERVICE_URL));
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {

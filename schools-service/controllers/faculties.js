@@ -90,19 +90,12 @@ exports.updateFaculty = async (req, res) => {
 exports.deleteFaculty = async (req, res) => {
     try {
         const faculty = await Faculty.findById(req.params.id);
-        if (!faculty) throw Error('Faculty is not found!')
-        const remFaculty = await Faculty.deleteMany({ faculty: req.params.id });
+        if (!faculty) throw Error('Faculty is not found!');
 
-        if (!remFaculty)
-            throw Error('Something went wrong while deleting!');
         const removedFaculty = await Faculty.deleteOne({ _id: req.params.id });
+        if (!removedFaculty) throw Error('Something went wrong while deleting!');
 
-        if (!removedFaculty)
-            throw Error('Something went wrong while deleting!');
-
-        res.status(200).json({ msg: `${removedFaculty.title} is Deleted!` })
-
-        res.status(200).json({ msg: `${removedFaculty.title} is Deleted!` })
+        res.status(200).json({ msg: `${faculty.title} is Deleted!` });
     } catch (err) {
         handleError(res, err);
     }
