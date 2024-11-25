@@ -35,7 +35,7 @@ exports.getFacultiesByLevel = async (req, res) => {
 }
 
 exports.getOneFaculty = async (req, res) => {
-    const faculty = await findFacultyById(req.params.id, res);
+    const faculty = await findFacultyById(req.params.id, res, '-__v');
     if (faculty) res.status(200).json(faculty);
 };
 

@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
+const axios = require("axios")
 const crypto = require("crypto")
 const { S3 } = require("@aws-sdk/client-s3")
 const { sendEmail } = require("../utils/emails/sendEmail")
@@ -40,29 +41,57 @@ const updateUserToken = async (user, token) => {
     return await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
 }
 
+// Helper function to get user's school details
+const getSchoolDetails = async (user) => {
+    let school, level, faculty
+    if (user.school) {
+        const schoolResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`)
+        school = schoolResponse.data
+    }
+    if (user.level) {
+        const levelResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`)
+        level = levelResponse.data
+    }
+    if (user.faculty) {
+        const facultyResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`)
+        faculty = facultyResponse.data
+    }
+    return { school, level, faculty }
+}
+
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().sort({ createdAt: -1 })
-        if (!users) return res.status(404).json({ msg: 'No users found!' })
-        res.status(200).json(users)
+        const users = await User.find().sort({ createdAt: -1 }).lean()
+        if (!users.length) return res.status(404).json({ msg: 'No users found!' })
+
+        const userDetailsPromises = users.map(async user => {
+            const details = await getSchoolDetails(user)
+            return { ...user, ...details }
+        })
+
+        const usersWithDetails = await Promise.all(userDetailsPromises)
+        res.status(200).json(usersWithDetails)
     } catch (err) {
         handleError(res, err)
     }
 }
 
-exports.getUser = async (req, res) => {
-    const user = await findUserById(req.user._id, res, '-password -__v')
-    if (user) res.json(user)
-}
-
 exports.loadUser = async (req, res) => {
     const user = await findUserById(req.user._id, res, '-password -__v')
-    if (user) res.json(user)
+
+    if (user) {
+        const details = await getSchoolDetails(user)
+        res.status(200).json({ ...user, ...details })
+    }
 }
 
 exports.getOneUser = async (req, res) => {
-    const user = await findUserById(req.params.id, res)
-    if (user) res.status(200).json(user)
+    const user = await findUserById(req.user._id, res, '-password -__v')
+
+    if (user) {
+        const details = await getSchoolDetails(user)
+        res.status(200).json({ ...user, ...details })
+    }
 }
 
 exports.getAdminsEmails = async (req, res) => {
@@ -91,9 +120,9 @@ exports.login = async (req, res) => {
             const otp = Math.floor(100000 + Math.random() * 900000).toString()
             await User.findOneAndUpdate({ email }, { otp })
             console.log(email, otp)
-            // await sendEmail(user.email,
-            //   "One Time Password (OTP) verification for Quiz Blog account",
-            //   { name: user.name, otp }, "./template/otp.handlebars")
+            await sendEmail(user.email,
+              "One Time Password (OTP) verification for Quiz Blog account",
+              { name: user.name, otp }, "./template/otp.handlebars")
             return res.status(400).json({ msg: 'Account not verified yet, check your email for OTP!' })
         }
 
@@ -181,17 +210,17 @@ exports.register = async (req, res) => {
         if (user && user.verified === false) {
             await User.findOneAndUpdate({ email }, { name, password: hash, otp })
             console.log("Existing: ", email, otp)
-            // await sendEmail(user.email,
-            //     "One Time Password (OTP) verification for Quiz Blog account",
-            //     { name: user.name, otp }, "./template/otp.handlebars")
+            await sendEmail(user.email,
+                "One Time Password (OTP) verification for Quiz Blog account",
+                { name: user.name, otp }, "./template/otp.handlebars")
         } else {
             const newUser = new User({ name, email, password: hash, otp, verified: false })
             const savedUser = await newUser.save()
             if (!savedUser) throw Error('Something went wrong saving the user')
             console.log(email, otp)
-            // await sendEmail(savedUser.email,
-            //     "One Time Password (OTP) verification for Quiz Blog account",
-            //     { name: savedUser.name, otp }, "./template/otp.handlebars")
+            await sendEmail(savedUser.email,
+                "One Time Password (OTP) verification for Quiz Blog account",
+                { name: savedUser.name, otp }, "./template/otp.handlebars")
         }
 
         res.status(200).json({ msg: 'Registration successful! Please verify your email to login.', email })
@@ -287,13 +316,13 @@ exports.sendNewPassword = async (req, res) => {
         const resetUser = await User.findById({ _id: userId })
         console.log(resetUser)
 
-        // sendEmail(
-        //     resetUser.email,
-        //     "Password reset for your Quiz-Blog account is successful!",
-        //     {
-        //         name: resetUser.name,
-        //     },
-        //     "./template/resetPassword.handlebars")
+        sendEmail(
+            resetUser.email,
+            "Password reset for your Quiz-Blog account is successful!",
+            {
+                name: resetUser.name,
+            },
+            "./template/resetPassword.handlebars")
 
         await passwordResetToken.deleteOne()
         res.status(200).json({ msg: "Password reset successful!", status: 200 })

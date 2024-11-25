@@ -35,7 +35,7 @@ exports.getSubscribedUsers = async (req, res) => {
 };
 
 exports.getOneSubscribedUser = async (req, res) => {
-    const subscribedUser = await findSubscribedUserById(req.params.id, res);
+    const subscribedUser = await findSubscribedUserById(req.params.id, res, '-__v');
     if (subscribedUser) res.status(200).json(subscribedUser);
 };
 
@@ -81,7 +81,7 @@ exports.createSubscribedUser = async (req, res) => {
 
 exports.updateSubscribedUser = async (req, res) => {
     try {
-        const subscribedUser = await findSubscribedUserById(req.params.id, res);
+        const subscribedUser = await findSubscribedUserById(req.params.id, res, '-__v');
         if (!subscribedUser) return;
 
         const updatedSubscribedUser = await SubscribedUser.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -93,7 +93,7 @@ exports.updateSubscribedUser = async (req, res) => {
 
 exports.deleteSubscribedUser = async (req, res) => {
     try {
-        const subscribedUser = await findSubscribedUserById(req.params.id, res);
+        const subscribedUser = await findSubscribedUserById(req.params.id, res, '-__v');
         if (!subscribedUser) return;
 
         const removedSubscribedUser = await SubscribedUser.deleteOne({ _id: req.params.id });

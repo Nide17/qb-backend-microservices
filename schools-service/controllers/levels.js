@@ -36,7 +36,7 @@ exports.getLevelsBySchool = async (req, res) => {
 }
 
 exports.getOneLevel = async (req, res) => {
-    const level = await findLevelById(req.params.id, res);
+    const level = await findLevelById(req.params.id, res, '-__v');
     if (level) res.status(200).json(level);
 };
 

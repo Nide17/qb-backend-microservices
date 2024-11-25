@@ -34,7 +34,7 @@ exports.getSchools = async (req, res) => {
 };
 
 exports.getOneSchool = async (req, res) => {
-    const school = await findSchoolById(req.params.id, res);
+    const school = await findSchoolById(req.params.id, res, '-__v');
     if (school) res.status(200).json(school);
 };
 
@@ -64,7 +64,7 @@ exports.createSchool = async (req, res) => {
 
 exports.updateSchool = async (req, res) => {
     try {
-        const school = await findSchoolById(req.params.id, res);
+        const school = await findSchoolById(req.params.id, res, '-__v');
         if (!school) return;
 
         const updatedSchool = await School.findByIdAndUpdate(req.params.id, req.body, { new: true });
@@ -76,7 +76,7 @@ exports.updateSchool = async (req, res) => {
 
 exports.deleteSchool = async (req, res) => {
     try {
-        const schoolToDelete = await findSchoolById(req.params.id, res);
+        const schoolToDelete = await findSchoolById(req.params.id, res, '-__v');
         if (!schoolToDelete) return;
 
         // Delete levels and faculties belonging to this School
