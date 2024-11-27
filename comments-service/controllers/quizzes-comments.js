@@ -1,13 +1,29 @@
 const QuizComment = require("../models/QuizComment");
+const axios = require('axios');
 
 // Helper function to handle errors
 const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
 
+// Helper function to populate sender and quiz fields
+const populateSenderAndQuiz = async (quizComment) => {
+    const sender = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${quizComment.sender}`);
+    const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${quizComment.quiz}`);
+
+    quizComment = quizComment.toObject();
+    quizComment.sender = sender.data;
+    quizComment.quiz = quiz.data;
+
+    return quizComment;
+};
+
 // Helper function to find quizComment by ID
 const findQuizCommentById = async (id, res, selectFields = '') => {
     try {
-        const quizComment = await QuizComment.findById(id).select(selectFields);
+        let quizComment = await QuizComment.findById(id).select(selectFields);
         if (!quizComment) return res.status(404).json({ msg: 'No quizComment found!' });
+
+        quizComment = await populateSenderAndQuiz(quizComment);
+
         return quizComment;
     } catch (err) {
         return handleError(res, err);
@@ -27,7 +43,12 @@ const validateRequiredFields = (fields, res) => {
 
 exports.getQuizzesComments = async (req, res) => {
     try {
-        const quizComments = await QuizComment.find();
+        let quizComments = await QuizComment.find();
+        
+        for (let i = 0; i < quizComments.length; i++) {
+            quizComments[i] = await populateSenderAndQuiz(quizComments[i]);
+        }
+
         res.status(200).json(quizComments);
     } catch (err) {
         handleError(res, err);
@@ -41,7 +62,12 @@ exports.getOneQuizComment = async (req, res) => {
 
 exports.getCommentsByQuiz = async (req, res) => {
     try {
-        const quizComments = await QuizComment.find({ quiz: req.params.quizId });
+        let quizComments = await QuizComment.find({ quiz: req.params.quizId });
+        
+        for (let i = 0; i < quizComments.length; i++) {
+            quizComments[i] = await populateSenderAndQuiz(quizComments[i]);
+        }
+
         res.status(200).json(quizComments);
     } catch (err) {
         handleError(res, err);

@@ -1,13 +1,31 @@
 const QuestionComment = require("../models/QuestionComment");
+const axios = require('axios');
 
 // Helper function to handle errors
 const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
 
+// Helper function to populate sender and quiz fields
+const populateSenderAndQuiz = async (questionComment) => {
+    const sender = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${questionComment.sender}`);
+    const question = await axios.get(`${process.env.API_GATEWAY_URL}/api/questions/${questionComment.question}`);
+    const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${questionComment.quiz}`);
+
+    questionComment = questionComment.toObject();
+    questionComment.sender = sender.data;
+    questionComment.question = question.data;
+    questionComment.quiz = quiz.data;
+
+    return questionComment;
+};
+
 // Helper function to find questionComment by ID
 const findQuestionCommentById = async (id, res, selectFields = '') => {
     try {
-        const questionComment = await QuestionComment.findById(id).select(selectFields);
+        let questionComment = await QuestionComment.findById(id).select(selectFields);
         if (!questionComment) return res.status(404).json({ msg: 'No questionComment found!' });
+
+        questionComment = await populateSenderAndQuiz(questionComment);
+
         return questionComment;
     } catch (err) {
         return handleError(res, err);
@@ -29,7 +47,12 @@ const updateQuestionCommentStatus = async (id, status, res) => {
 
 exports.getQuestionsComments = async (req, res) => {
     try {
-        const questionComments = await QuestionComment.find();
+        let questionComments = await QuestionComment.find();
+        
+        for (let i = 0; i < questionComments.length; i++) {
+            questionComments[i] = await populateSenderAndQuiz(questionComments[i]);
+        }
+
         res.status(200).json(questionComments);
     } catch (err) {
         handleError(res, err);
@@ -39,12 +62,17 @@ exports.getQuestionsComments = async (req, res) => {
 exports.getPaginatedComments = async (req, res) => {
     try {
         const { page = 1, limit = 10 } = req.query;
-        const questionComments = await QuestionComment.find()
+        let questionComments = await QuestionComment.find()
             .limit(limit * 1)
             .skip((page - 1) * limit)
             .exec();
 
         const count = await QuestionComment.countDocuments();
+
+        for (let i = 0; i < questionComments.length; i++) {
+            questionComments[i] = await populateSenderAndQuiz(questionComments[i]);
+        }
+
         res.json({
             questionComments,
             totalPages: Math.ceil(count / limit),
@@ -57,8 +85,14 @@ exports.getPaginatedComments = async (req, res) => {
 
 exports.getPendingComments = async (req, res) => {
     try {
-        const questionComments = await QuestionComment.find({ status: 'Pending' });
+        let questionComments = await QuestionComment.find({ status: 'Pending' });
+
+        for (let i = 0; i < questionComments.length; i++) {
+            questionComments[i] = await populateSenderAndQuiz(questionComments[i]);
+        }
+
         res.status(200).json(questionComments);
+
     } catch (err) {
         handleError(res, err);
     }
@@ -74,13 +108,21 @@ exports.getCommentsByQuestion = async (req, res) => {
 };
 
 exports.getOneQuestionComment = async (req, res) => {
-    const questionComment = await findQuestionCommentById(req.params.id, res);
-    if (questionComment) res.status(200).json(questionComment);
+    let questionComment = await findQuestionCommentById(req.params.id, res);
+
+    questionComment = await populateSenderAndQuiz(questionComment);
+
+    res.status(200).json(questionComment);
 };
 
 exports.getCommentsByQuiz = async (req, res) => {
     try {
-        const questionComments = await QuestionComment.find({ quiz: req.params.quizId });
+        let questionComments = await QuestionComment.find({ quiz: req.params.quizId });
+        
+        for (let i = 0; i < questionComments.length; i++) {
+            questionComments[i] = await populateSenderAndQuiz(questionComments[i]);
+        }
+
         res.status(200).json(questionComments);
     } catch (err) {
         handleError(res, err);
