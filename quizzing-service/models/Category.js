@@ -28,7 +28,7 @@ const CategorySchema = new Schema({
   last_updated_by: {
     type: Schema.Types.ObjectId,
   },
-  category: {
+  courseCategory: {
     type: Schema.Types.ObjectId,
   },
   slug: {
@@ -45,5 +45,12 @@ CategorySchema.pre("validate", function (next) {
   }
   next()
 })
+
+CategorySchema.methods.populateCourseCategory = async function () {
+  const category = this;
+  const courseCategory = await axios.get(`${process.env.API_GATEWAY_URL}/api/course-categories/${category.courseCategory}`);
+  category.courseCategory = courseCategory.data;
+  return category;
+};
 
 module.exports = mongoose.model("Category", CategorySchema);

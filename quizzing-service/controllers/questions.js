@@ -16,7 +16,7 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find question by ID
 const findQuestionById = async (id, res, selectFields = '') => {
     try {
-        const question = await Question.findById(id).select(selectFields);
+        const question = await Question.findById(id).select(selectFields).populate('Category Quiz');
         if (!question) return res.status(404).json({ msg: 'No question found!' });
         return question;
     } catch (err) {
@@ -52,7 +52,7 @@ const updateQuizQuestions = async (quizId, questionId, action) => {
 
 exports.getQuestions = async (req, res) => {
     try {
-        const questions = await Question.find().sort({ createdAt: -1 });
+        const questions = await Question.find().sort({ createdAt: -1 }).populate('Category Quiz');;
         if (!questions) return res.status(404).json({ msg: 'No questions found!' });
         res.status(200).json(questions);
     } catch (err) {

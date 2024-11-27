@@ -12,7 +12,7 @@ const handleError = (res, err, status = 400) => {
 // Helper function to find quiz by ID
 const findQuizById = async (id, res, selectFields = '') => {
     try {
-        const quiz = await Quiz.findById(id).select(selectFields);
+        const quiz = await Quiz.findById(id).select(selectFields).populate('Category Question');
         if (!quiz) return res.status(404).json({ msg: 'No quiz found!' });
         return quiz;
     } catch (err) {
@@ -27,7 +27,7 @@ const getQuizzesWithPagination = async (query, pageNo, pageSize, res) => {
         const totalQuizzes = await Quiz.countDocuments(query);
         const quizzes = await Quiz.find(query)
             .sort({ creation_date: -1 })
-            .populate('category questions')
+            .populate('Category Question')
             .limit(pageSize)
             .skip(skip);
 
@@ -49,7 +49,7 @@ exports.getQuizzes = async (req, res) => {
     try {
         const quizzes = await Quiz.find({})
             .sort({ createdAt: -1 })
-            .populate('category questions')
+            .populate('Category Question')
             .limit(limit)
             .skip(skip);
 
@@ -74,7 +74,7 @@ exports.getPaginatedQuizzes = async (req, res) => {
 exports.getOneQuiz = async (req, res) => {
     try {
         const quiz = await Quiz.findOne({ slug: req.params.quizSlug })
-            .populate('category questions').lean();
+            .populate('Category Question').lean();
 
         if (!quiz) throw new Error('Quiz not found!');
 
@@ -87,7 +87,7 @@ exports.getOneQuiz = async (req, res) => {
 exports.getQuizzesByCategory = async (req, res) => {
     try {
         const quizzes = await Quiz.find({ category: req.params.id })
-            .populate('category questions');
+            .populate('Category Question');
         if (!quizzes.length) throw new Error('No quizzes found');
         res.status(200).json(quizzes);
     } catch (err) {
@@ -100,7 +100,7 @@ exports.getQuizzesByNotes = async (req, res) => {
         const categories = await Category.find({ category: req.params.id });
         if (!categories.length) throw new Error('No category found!');
 
-        const quizzes = await Quiz.find({ category: { $in: categories } });
+        const quizzes = await Quiz.find({ category: { $in: categories } }).populate('Category Question');
         if (!quizzes.length) throw new Error('No quizzes found!');
 
         res.status(200).json(quizzes);
