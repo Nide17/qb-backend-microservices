@@ -1,5 +1,4 @@
 const Feedback = require("../models/Feedback");
-const axios = require('axios');
 
 // Helper function to handle errors
 const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
@@ -7,8 +6,10 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find feedback by ID
 const findFeedbackById = async (id, res, selectFields = '') => {
     try {
-        const feedback = await Feedback.findById(id).select(selectFields);
+        let feedback = await Feedback.findById(id).select(selectFields);
         if (!feedback) return res.status(404).json({ msg: 'No feedback found!' });
+
+        feedback = await feedback.populateDetails();
         return feedback;
     } catch (err) {
         return handleError(res, err);
@@ -20,22 +21,6 @@ const getPagination = (pageNo, pageSize) => {
     const limit = pageSize;
     const skip = pageSize * (pageNo - 1);
     return { limit, skip };
-};
-
-// Helper function to fetch feedback details
-const fetchFeedbackDetails = async (feedback) => {
-    const quiz = await axios.get(`${API_GATEWAY_URL}/quizzes/${feedback.quiz}`);
-    const score = await axios.get(`${API_GATEWAY_URL}/scores/${feedback.score}`);
-    const user = score && await axios.get(`${API_GATEWAY_URL}/users/${score.data.taken_by}`);
-
-    return {
-        ...feedback.toObject(),
-        quiz: quiz.data,
-        score: score && {
-            ...score.data,
-            taken_by: user && user.data
-        }
-    };
 };
 
 exports.getFeedbacks = async (req, res) => {
@@ -51,7 +36,7 @@ exports.getFeedbacks = async (req, res) => {
 
         if (!feedbacks) throw Error('No feedbacks exist');
 
-        const feedbacksWithDetails = await Promise.all(feedbacks.map(fetchFeedbackDetails));
+        const feedbacksWithDetails = await Promise.all(feedbacks.map(async (feedback) => await feedback.populateDetails()));
 
         if (pageNo > 0) {
             res.status(200).json({
