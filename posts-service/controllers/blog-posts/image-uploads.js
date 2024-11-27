@@ -6,8 +6,10 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find imageUpload by ID
 const findImageUploadById = async (id, res, selectFields = '') => {
     try {
-        const imageUpload = await ImageUpload.findById(id).select(selectFields);
+        let imageUpload = await ImageUpload.findById(id).select(selectFields);
         if (!imageUpload) return res.status(404).json({ msg: 'No imageUpload found!' });
+
+        imageUpload = await imageUpload.populateOwner();
         return imageUpload;
     } catch (err) {
         return handleError(res, err);
@@ -16,8 +18,10 @@ const findImageUploadById = async (id, res, selectFields = '') => {
 
 exports.getImageUploads = async (req, res) => {
     try {
-        const imageUploads = await ImageUpload.find().sort({ createdAt: -1 });
+        let imageUploads = await ImageUpload.find().sort({ createdAt: -1 });
         if (!imageUploads) return res.status(404).json({ msg: 'No imageUploads found!' });
+
+        imageUploads = await Promise.all(imageUploads.map(async (imgUp) => await imgUp.populateOwner()));
         res.status(200).json(imageUploads);
     } catch (err) {
         handleError(res, err);
@@ -31,8 +35,11 @@ exports.getOneImageUpload = async (req, res) => {
 
 exports.getImageUploadsByOwner = async (req, res) => {
     try {
-        const imageUploads = await ImageUpload.find({ owner: req.params.id }).sort({ createdAt: -1 });
+        let imageUploads = await ImageUpload.find({ owner: req.params.id }).sort({ createdAt: -1 });
         if (!imageUploads) return res.status(404).json({ msg: 'No imageUploads found!' });
+
+        imageUploads = await Promise.all(imageUploads.map(async (imgUp) => await imgUp.populateOwner()));
+
         res.status(200).json(imageUploads);
     } catch (err) {
         handleError(res, err);

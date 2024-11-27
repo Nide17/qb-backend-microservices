@@ -13,9 +13,11 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 
 exports.getBlogPosts = async (req, res) => {
     try {
-        const blogPosts = await BlogPost.find().sort({ createdAt: -1 })
-            .populate('postsCategory creator')
+        let blogPosts = await BlogPost.find().sort({ createdAt: -1 })
+            .populate('postsCategory');
         if (!blogPosts) return res.status(404).json({ msg: 'No blogPosts found!' });
+
+        blogPosts = await Promise.all(blogPosts.map(async (post) => await post.populateCreator()));
         res.status(200).json(blogPosts);
     } catch (err) {
         handleError(res, err);
@@ -24,9 +26,11 @@ exports.getBlogPosts = async (req, res) => {
 
 exports.getOneBlogPost = async (req, res) => {
     try {
-        const blogPost = await BlogPost.findOne({ slug: req.params.slug })
-            .populate('postsCategory creator')
+        let blogPost = await BlogPost.findOne({ slug: req.params.slug })
+            .populate('postsCategory');
         if (!blogPost) return res.status(404).json({ msg: 'BlogPost not found!' });
+
+        blogPost = await blogPost.populateCreator();
         res.status(200).json(blogPost);
     } catch (err) {
         handleError(res, err);
@@ -35,9 +39,11 @@ exports.getOneBlogPost = async (req, res) => {
 
 exports.getBlogPostsByCategory = async (req, res) => {
     try {
-        const blogPosts = await BlogPost.find({ category: req.params.id }).sort({ createdAt: -1 })
-            .populate('postsCategory creator')
+        let blogPosts = await BlogPost.find({ postsCategory: req.params.id }).sort({ createdAt: -1 })
+            .populate('postsCategory');
         if (!blogPosts) return res.status(404).json({ msg: 'No blogPosts found!' });
+
+        blogPosts = await Promise.all(blogPosts.map(async (post) => await post.populateCreator()));
         res.status(200).json(blogPosts);
     } catch (err) {
         handleError(res, err);

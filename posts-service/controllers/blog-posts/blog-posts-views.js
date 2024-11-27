@@ -18,8 +18,10 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find blogPostsView by ID
 const findBlogPostsViewById = async (id, res, selectFields = '') => {
     try {
-        const blogPostsView = await BlogPostsView.findById(id).select(selectFields);
+        let blogPostsView = await BlogPostsView.findById(id).select(selectFields);
         if (!blogPostsView) return res.status(404).json({ msg: 'No blogPostsView found!' });
+
+        blogPostsView = await blogPostsView.populateViewer();
         return blogPostsView;
     } catch (err) {
         return handleError(res, err);
@@ -28,8 +30,10 @@ const findBlogPostsViewById = async (id, res, selectFields = '') => {
 
 exports.getBlogPostsViews = async (req, res) => {
     try {
-        const blogPostsViews = await BlogPostsView.find().sort({ createdAt: -1 });
+        let blogPostsViews = await BlogPostsView.find().sort({ createdAt: -1 });
         if (!blogPostsViews) return res.status(404).json({ msg: 'No blogPostsViews found!' });
+
+        blogPostsViews = await Promise.all(blogPostsViews.map(async (post) => await post.populateViewer()));
         res.status(200).json(blogPostsViews);
     } catch (err) {
         handleError(res, err);
@@ -37,14 +41,16 @@ exports.getBlogPostsViews = async (req, res) => {
 };
 
 exports.getOneBlogPostsView = async (req, res) => {
-    const blogPostsView = await findBlogPostsViewById(req.params.id, res);
+    let blogPostsView = await findBlogPostsViewById(req.params.id, res);
     if (blogPostsView) res.status(200).json(blogPostsView);
 };
 
 exports.getRecentTenViews = async (req, res) => {
     try {
-        const blogPostsViews = await BlogPostsView.find({ postsCategory: req.params.id }).sort({ createdAt: -1 }).limit(10);
+        let blogPostsViews = await BlogPostsView.find({ postsCategory: req.params.id }).sort({ createdAt: -1 }).limit(10);
         if (!blogPostsViews) return res.status(404).json({ msg: 'No blogPostsViews found!' });
+
+        blogPostsViews = await Promise.all(blogPostsViews.map(async (post) => await post.populateViewer()));
         res.status(200).json(blogPostsViews);
     } catch (err) {
         handleError(res, err);
@@ -92,7 +98,7 @@ exports.createBlogPostsView = async (req, res) => {
 
 exports.updateBlogPostsView = async (req, res) => {
     try {
-        const blogPostsView = await BlogPostsView.findById(req.params.id);
+        let blogPostsView = await BlogPostsView.findById(req.params.id);
         if (!blogPostsView) return res.status(404).json({ msg: 'BlogPostsView not found!' });
 
         const updatedBlogPostsView = await BlogPostsView.findByIdAndUpdate(req.params.id, req.body, { new: true });

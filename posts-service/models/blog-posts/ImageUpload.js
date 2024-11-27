@@ -14,9 +14,13 @@ const ImageUploadSchema = new Schema({
     owner: {
         type: Schema.Types.ObjectId
     }
-},
-    {
-        timestamps: true,
-    })
+}, { timestamps: true, })
+
+ImageUploadSchema.methods.populateOwner = async function () {
+    const upload = this;
+    const owner = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${upload.owner}`);
+    upload.owner = owner.data;
+    return upload;
+};
 
 module.exports = mongoose.model("ImageUpload", ImageUploadSchema)

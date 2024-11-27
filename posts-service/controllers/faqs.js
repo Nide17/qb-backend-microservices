@@ -6,8 +6,10 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find faq by ID
 const findFaqById = async (id, res, selectFields = '') => {
     try {
-        const faq = await Faq.findById(id).select(selectFields);
+        let faq = await Faq.findById(id).select(selectFields);
         if (!faq) return res.status(404).json({ msg: 'No faq found!' });
+
+        faq = await faq.populateCreatedBy();
         return faq;
     } catch (err) {
         return handleError(res, err);
@@ -29,8 +31,10 @@ const handleFindByIdAndUpdate = async (id, update, res) => {
 
 exports.getFaqs = async (req, res) => {
     try {
-        const faqs = await Faq.find().sort({ createdAt: -1 });
+        let faqs = await Faq.find().sort({ createdAt: -1 });
         if (!faqs) return res.status(404).json({ msg: 'No faqs found!' });
+
+        faqs = await Promise.all(faqs.map(async (faq) => await faq.populateCreatedBy()));
         res.status(200).json(faqs);
     } catch (err) {
         handleError(res, err);

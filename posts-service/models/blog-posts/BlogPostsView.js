@@ -25,9 +25,14 @@ const BlogPostsViewSchema = new Schema({
         required: false,
         default: null
     }
-},
-    {
-        timestamps: true,
-    })
+}, { timestamps: true, })
+
+BlogPostsViewSchema.methods.populateViewer = async function () {
+    const view = this;
+    const viewer = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${view.viewer}`);
+    view.viewer = viewer.data;
+    return view;
+};
+
 
 module.exports = mongoose.model("BlogPostsView", BlogPostsViewSchema)

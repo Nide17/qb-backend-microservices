@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const slugify = require("slugify")
+const axios = require('axios')
 
 //initialize Mongo schema
 const Schema = mongoose.Schema
@@ -46,5 +47,12 @@ BlogPostSchema.pre("validate", function (next) {
     }
     next()
 })
+
+BlogPostSchema.methods.populateCreator = async function () {
+    const blogPost = this;
+    const creator = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${blogPost.creator}`);
+    blogPost.creator = creator.data;
+    return blogPost;
+};
 
 module.exports = mongoose.model("BlogPost", BlogPostSchema)
