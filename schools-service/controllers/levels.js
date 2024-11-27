@@ -7,7 +7,7 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find level by ID
 const findLevelById = async (id, res, selectFields = '') => {
     try {
-        const level = await Level.findById(id).select(selectFields);
+        const level = await Level.findById(id).select(selectFields).populate('School');
         if (!level) return res.status(404).json({ msg: 'No level found!' });
         return level;
     } catch (err) {
@@ -18,7 +18,7 @@ const findLevelById = async (id, res, selectFields = '') => {
 exports.getLevels = async (req, res) => {
 
     try {
-        const levels = await Level.find();
+        const levels = await Level.find().sort({ createdAt: -1 }).populate('School');
         res.status(200).json(levels);
     } catch (err) {
         handleError(res, err);
@@ -28,7 +28,7 @@ exports.getLevels = async (req, res) => {
 
 exports.getLevelsBySchool = async (req, res) => {
     try {
-        const levels = await Level.find({ school: req.params.id });
+        const levels = await Level.find({ school: req.params.id }).sort({ createdAt: -1 }).populate('School');
         res.status(200).json(levels);
     } catch (err) {
         handleError(res, err);

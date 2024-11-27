@@ -6,7 +6,7 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find faculty by ID
 const findFacultyById = async (id, res, selectFields = '') => {
     try {
-        const faculty = await Faculty.findById(id).select(selectFields);
+        const faculty = await Faculty.findById(id).select(selectFields).populate('School Level');
         if (!faculty) return res.status(404).json({ msg: 'No faculty found!' });
         return faculty;
     } catch (err) {
@@ -17,7 +17,7 @@ const findFacultyById = async (id, res, selectFields = '') => {
 exports.getFaculties = async (req, res) => {
 
     try {
-        const faculties = await Faculty.find();
+        const faculties = await Faculty.find().sort({ createdAt: -1 }).populate('School Level');
         res.status(200).json(faculties);
     } catch (err) {
         handleError(res, err);
@@ -27,7 +27,7 @@ exports.getFaculties = async (req, res) => {
 
 exports.getFacultiesByLevel = async (req, res) => {
     try {
-        const faculties = await Faculty.find({ level: req.params.id });
+        const faculties = await Faculty.find({ level: req.params.id }).sort({ createdAt: -1 }).populate('School Level');
         res.status(200).json(faculties);
     } catch (err) {
         handleError(res, err);
