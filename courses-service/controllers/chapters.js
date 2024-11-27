@@ -7,7 +7,7 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find chapter by ID
 const findChapterById = async (id, res, selectFields = '') => {
     try {
-        const chapter = await Chapter.findById(id).select(selectFields);
+        const chapter = await Chapter.findById(id).select(selectFields).populate('Course');
         if (!chapter) return res.status(404).json({ msg: 'No chapter found!' });
         return chapter;
     } catch (err) {

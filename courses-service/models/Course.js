@@ -25,7 +25,6 @@ const CourseSchema = new Schema({
     last_updated_by: {
         type: Schema.Types.ObjectId,
     }
-},
-    { timestamps: true });
+}, { timestamps: true });
 
 module.exports = mongoose.model('Course', CourseSchema);

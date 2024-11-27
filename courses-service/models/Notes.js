@@ -43,8 +43,7 @@ const NotesSchema = new Schema({
             default: []
         }
     ]
-},
-    { timestamps: true });
+}, { timestamps: true });
 
 NotesSchema.pre("validate", function (next) {
     const notes = this
@@ -54,5 +53,17 @@ NotesSchema.pre("validate", function (next) {
     }
     next()
 })
+
+NotesSchema.methods.populateQuizzes = async function () {
+    const notes = this;
+    const quizzes = await Promise.all(
+        notes.quizzes.map(async (quizId) => {
+            const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${quizId}`);
+            return quiz.data;
+        })
+    );
+    notes.quizzes = quizzes;
+    return notes;
+};
 
 module.exports = mongoose.model('Notes', NotesSchema);

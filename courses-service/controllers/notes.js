@@ -6,8 +6,10 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find notes by ID
 const findNotesById = async (id, res, selectFields = '') => {
     try {
-        const notes = await Notes.findById(id).select(selectFields);
+        let notes = await Notes.findById(id).select(selectFields);
         if (!notes) return res.status(404).json({ msg: 'No notes found!' });
+
+        notes = await notes.populateQuizzes();
         return notes;
     } catch (err) {
         return handleError(res, err);
@@ -16,8 +18,10 @@ const findNotesById = async (id, res, selectFields = '') => {
 
 exports.getNotes = async (req, res) => {
     try {
-        const notes = await Notes.find().sort({ createdAt: -1 });
+        let notes = await Notes.find().sort({ createdAt: -1 });
         if (!notes) throw Error('No notes found!');
+
+        notes = await Promise.all(notes.map(async (note) => await note.populateQuizzes()));
         res.status(200).json(notes);
     } catch (err) {
         handleError(res, err);

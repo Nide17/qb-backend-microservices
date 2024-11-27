@@ -29,7 +29,6 @@ const ChapterSchema = new Schema({
     last_updated_by: {
         type: Schema.Types.ObjectId,
     }
-},
-    { timestamps: true });
+}, { timestamps: true });
 
 module.exports = mongoose.model('Chapter', ChapterSchema);
