@@ -63,4 +63,17 @@ const UserSchema = new Schema({
   },
 }, { timestamps: true })
 
+UserSchema.methods.populateSchoolData = async function () {
+  const user = this;
+  const schl = await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`);
+  const lvl = await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`);
+  const faculty = await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${faculty.level}`);
+
+  user.school = schl.data;
+  user.level = lvl.data;
+  user.faculty = faculty.data;
+
+  return user;
+};
+
 module.exports = mongoose.model("User", UserSchema);

@@ -52,7 +52,7 @@ const updateQuizQuestions = async (quizId, questionId, action) => {
 
 exports.getQuestions = async (req, res) => {
     try {
-        const questions = await Question.find().sort({ createdAt: -1 }).populate('Category Quiz');;
+        const questions = await Question.find().sort({ createdAt: -1 }).populate('Category Quiz');w;
         if (!questions) return res.status(404).json({ msg: 'No questions found!' });
         res.status(200).json(questions);
     } catch (err) {

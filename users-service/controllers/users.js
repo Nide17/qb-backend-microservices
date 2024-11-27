@@ -23,9 +23,15 @@ const handleError = (res, err, status = 400) => {
 // Helper function to find user by ID
 const findUserById = async (id, res, selectFields = '') => {
     try {
-        const user = await User.findById(id).select(selectFields)
+        let user = await User.findById(id).select(selectFields)
         if (!user) return res.status(404).json({ msg: 'No user found!' })
+
+        if (user.school) {
+            user = await user.populateSchoolData()
+        }
+
         return user
+
     } catch (err) {
         return handleError(res, err)
     }
@@ -41,57 +47,39 @@ const updateUserToken = async (user, token) => {
     return await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
 }
 
-// Helper function to get user's school details
-const getSchoolDetails = async (user) => {
-    let school, level, faculty
-    if (user.school) {
-        const schoolResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`)
-        school = schoolResponse.data
-    }
-    if (user.level) {
-        const levelResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`)
-        level = levelResponse.data
-    }
-    if (user.faculty) {
-        const facultyResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`)
-        faculty = facultyResponse.data
-    }
-    return { school, level, faculty }
-}
+
 
 exports.getUsers = async (req, res) => {
     try {
-        const users = await User.find().sort({ createdAt: -1 }).lean()
+        let users = await User.find().sort({ createdAt: -1 }).lean()
         if (!users.length) return res.status(404).json({ msg: 'No users found!' })
 
-        const userDetailsPromises = users.map(async user => {
-            const details = await getSchoolDetails(user)
-            return { ...user, ...details }
-        })
+        users = await Promise.all(users.map(async (usr) => await usr.populateSchoolData()))
+        res.status(200).json(users);
 
-        const usersWithDetails = await Promise.all(userDetailsPromises)
-        res.status(200).json(usersWithDetails)
     } catch (err) {
         handleError(res, err)
     }
 }
 
 exports.loadUser = async (req, res) => {
-    const user = await findUserById(req.user._id, res, '-password -__v')
+    let user = await findUserById(req.user._id, res, '-password -__v')
 
     if (user) {
-        const details = await getSchoolDetails(user)
-        res.status(200).json({ ...user, ...details })
+        user = await user.populateSchoolData()
     }
+
+    res.status(200).json(user)
 }
 
 exports.getOneUser = async (req, res) => {
-    const user = await findUserById(req.user._id, res, '-password -__v')
+    let user = await findUserById(req.user._id, res, '-password -__v')
 
     if (user) {
-        const details = await getSchoolDetails(user)
-        res.status(200).json({ ...user, ...details })
+        user = await user.populateSchoolData()
     }
+
+    res.status(200).json(user)
 }
 
 exports.getAdminsEmails = async (req, res) => {
@@ -121,8 +109,8 @@ exports.login = async (req, res) => {
             await User.findOneAndUpdate({ email }, { otp })
             console.log(email, otp)
             await sendEmail(user.email,
-              "One Time Password (OTP) verification for Quiz Blog account",
-              { name: user.name, otp }, "./template/otp.handlebars")
+                "One Time Password (OTP) verification for Quiz Blog account",
+                { name: user.name, otp }, "./template/otp.handlebars")
             return res.status(400).json({ msg: 'Account not verified yet, check your email for OTP!' })
         }
 
