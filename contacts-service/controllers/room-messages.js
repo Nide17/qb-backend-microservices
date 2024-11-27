@@ -1,4 +1,5 @@
 const RoomMessage = require("../models/RoomMessage");
+const axios = require('axios');
 
 // Helper function to handle errors
 const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
@@ -24,7 +25,14 @@ const validateRoomMessageData = (data) => {
 
 exports.getRoomMessages = async (req, res) => {
     try {
-        const roomMessages = await RoomMessage.find().sort({ createdAt: -1 });
+        let roomMessages = await RoomMessage.find().sort({ createdAt: -1 });
+
+        for (const roomMessage of roomMessages) {
+            const senderResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.sender}`);
+            const receiverResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.receiver}`);
+            roomMessage.sender = senderResponse.data;
+            roomMessage.receiver = receiverResponse.data;
+        }
         res.status(200).json(roomMessages);
     } catch (err) {
         handleError(res, err);

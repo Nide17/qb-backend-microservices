@@ -44,7 +44,14 @@ exports.getBroadcasts = async (req, res) => {
 
 exports.getOneBroadcast = async (req, res) => {
     const broadcast = await findBroadcastById(req.params.id, res);
-    if (broadcast) res.status(200).json(broadcast);
+    let sent_by = null;
+    if (broadcast) {
+        userResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${broadcast.sent_by}`)
+        if (userResponse) {
+            sent_by = userResponse && userResponse.data;
+        }
+    }
+    if (broadcast) res.status(200).json({ ...broadcast._doc, sent_by });
 };
 
 exports.createBroadcast = async (req, res) => {

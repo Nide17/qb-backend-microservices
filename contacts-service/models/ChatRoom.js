@@ -10,12 +10,7 @@ const ChatRoomSchema = new Schema({
         type: String,
         required: true
     },
-    users: [
-        {
-            type: Schema.Types.ObjectId,
-        }
-    ]
-},
-    { timestamps: true });
+    users: [{ type: Schema.Types.ObjectId, }]
+}, { timestamps: true });
 
 module.exports = mongoose.model("ChatRoom", ChatRoomSchema);

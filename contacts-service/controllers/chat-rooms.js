@@ -1,5 +1,6 @@
 const ChatRoom = require("../models/ChatRoom");
 const RoomMessage = require("../models/RoomMessage");
+const axios = require('axios');
 
 // Helper function to handle errors
 const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
@@ -24,9 +25,40 @@ const validateRequestBody = (body, requiredFields) => {
     }
 };
 
+// Helper function to populate users in chat rooms
+const populateUsersInChatRooms = async (chatRooms) => {
+    const userIds = chatRooms.map(room => room.users).flat();
+    const uniqueUserIds = [...new Set(userIds)];
+
+    let usersResponse;
+    try {
+        // for each user, get user details
+        uniqueUserIds.forEach(async (userId) => {
+            usrResp = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${userId}`);
+
+            // combine each user details in usersResponse
+            usersResponse = [...usersResponse, usrResp.data];
+            });
+    } catch (err) {
+        throw new Error('Failed to get users');
+    }
+    
+    const usersMap = usersResponse.reduce((acc, user) => {
+        acc[user._id] = user;
+        return acc;
+    }, {});
+
+    chatRooms.forEach(room => {
+        room.users = room.users.map(userId => usersMap[userId]);
+    });
+
+    return chatRooms;
+};
+
 exports.getChatRooms = async (req, res) => {
     try {
-        const chatRooms = await ChatRoom.find().sort({ createdAt: -1 });
+        let chatRooms = await ChatRoom.find().sort({ createdAt: -1 });
+        chatRooms = await populateUsersInChatRooms(chatRooms);
         res.status(200).json(chatRooms);
     } catch (err) {
         handleError(res, err);
@@ -61,29 +93,27 @@ exports.createOpenChatRoom = async (req, res) => {
     const name = req.params.roomNameToOpen;
 
     try {
-        // Search if the chat room is already existing
-        const chatroom = await ChatRoom.findOne({ name }).populate('users');
+        let chatroom = await ChatRoom.findOne({ name });
 
-        // If yes, return the chat room
         if (chatroom) {
-            return res.status(200).json(chatroom);
+            chatroom = await populateUsersInChatRooms([chatroom]);
+            return res.status(200).json(chatroom[0]);
         }
 
-        // Simple validation
         validateRequestBody(req.body, ['users']);
         const { users } = req.body;
         if (users.length < 2) {
             throw new Error('No room users provided');
         }
 
-        // Create a new chat room
         const newRoom = new ChatRoom({ name, users });
         const savedRoom = await newRoom.save();
         if (!savedRoom) throw new Error('Something went wrong during creation!');
 
-        const createdChatroom = await ChatRoom.findById(savedRoom._id).populate('users');
-        res.status(200).json(createdChatroom);
+        let createdChatroom = await ChatRoom.findById(savedRoom._id);
+        createdChatroom = await populateUsersInChatRooms([createdChatroom]);
 
+        res.status(200).json(createdChatroom[0]);
     } catch (err) {
         handleError(res, err);
     }
@@ -106,7 +136,6 @@ exports.deleteChatRoom = async (req, res) => {
         const chatRoom = await findChatRoomById(req.params.id, res);
         if (!chatRoom) return;
 
-        // delete all messages in the chatRoom
         await RoomMessage.deleteMany({ room: req.params.id });
 
         const deletedChatRoom = await ChatRoom.findByIdAndDelete(req.params.id);

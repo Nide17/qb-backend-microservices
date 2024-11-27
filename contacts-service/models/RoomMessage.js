@@ -20,7 +20,6 @@ const RoomMessageSchema = new Schema({
         type: Schema.Types.ObjectId,
         ref: 'ChatRoom'
     }
-},
-    { timestamps: true });
+}, { timestamps: true });
 
 module.exports = mongoose.model("RoomMessage", RoomMessageSchema);
