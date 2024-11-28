@@ -24,13 +24,11 @@ const handleError = (res, err, status = 400) => {
 const findUserById = async (id, res, selectFields = '') => {
     try {
         let user = await User.findById(id).select(selectFields)
+
         if (!user) return res.status(404).json({ msg: 'No user found!' })
+        user = await user.populateSchoolData()
 
-        if (user.school) {
-            user = await user.populateSchoolData()
-        }
-
-        return user
+        res.status(200).json(user)
 
     } catch (err) {
         return handleError(res, err)
@@ -47,14 +45,15 @@ const updateUserToken = async (user, token) => {
     return await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
 }
 
-
-
 exports.getUsers = async (req, res) => {
     try {
         let users = await User.find().sort({ createdAt: -1 }).lean()
         if (!users.length) return res.status(404).json({ msg: 'No users found!' })
 
-        users = await Promise.all(users.map(async (usr) => await usr.populateSchoolData()))
+        users = await Promise.all(users.map(async (usr) => {
+            const userInstance = new User(usr);
+            return await userInstance.populateSchoolData();
+        }))
         res.status(200).json(users);
 
     } catch (err) {
@@ -62,25 +61,7 @@ exports.getUsers = async (req, res) => {
     }
 }
 
-exports.loadUser = async (req, res) => {
-    let user = await findUserById(req.user._id, res, '-password -__v')
-
-    if (user) {
-        user = await user.populateSchoolData()
-    }
-
-    res.status(200).json(user)
-}
-
-exports.getOneUser = async (req, res) => {
-    let user = await findUserById(req.user._id, res, '-password -__v')
-
-    if (user) {
-        user = await user.populateSchoolData()
-    }
-
-    res.status(200).json(user)
-}
+exports.getOneUser = async (req, res) => await findUserById(req.params.id, res, '-password -__v')
 
 exports.getAdminsEmails = async (req, res) => {
     try {

@@ -64,14 +64,16 @@ const UserSchema = new Schema({
 }, { timestamps: true })
 
 UserSchema.methods.populateSchoolData = async function () {
-  const user = this;
-  const schl = await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`);
-  const lvl = await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`);
-  const faculty = await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${faculty.level}`);
+  let user = this;
+  const axios = require('axios');
+  const schl = user.school && await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`);
+  const level = user.level && await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`);
+  const faculty = user.faculty && await axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`);
 
-  user.school = schl.data;
-  user.level = lvl.data;
-  user.faculty = faculty.data;
+  user = user.toObject();
+  user.school = schl && schl.data;
+  user.level = level && level.data;
+  user.faculty = faculty && faculty.data;
 
   return user;
 };
