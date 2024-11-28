@@ -83,6 +83,11 @@ app.use('/api/questions-comments', routeToService(process.env.COMMENTS_SERVICE_U
 // Statistics Service
 app.use('/api/statistics', routeToService(process.env.STATISTICS_SERVICE_URL));
 
+// 404 Route Not Found
+app.use((req, res, next) => {
+    res.status(404).send({ error: `Route ${req.url} not found` });
+});
+
 // Error Handling Middleware
 app.use((err, req, res, next) => {
     console.error(err.stack);

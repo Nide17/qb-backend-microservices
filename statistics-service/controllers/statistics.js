@@ -3,7 +3,7 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
 exports.get50NewUsers = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 limit: 50,
                 sort: '-register_date'
@@ -21,7 +21,7 @@ exports.get50NewUsers = async (req, res) => {
 
 exports.getAllUsers = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`);
         const users = response.data;
 
         if (!users) throw Error('No users exist');
@@ -34,7 +34,7 @@ exports.getAllUsers = async (req, res) => {
 
 exports.getUsersWithImage = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'image'
             }
@@ -51,7 +51,7 @@ exports.getUsersWithImage = async (req, res) => {
 
 exports.getUsersWithSchool = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'school'
             }
@@ -68,7 +68,7 @@ exports.getUsersWithSchool = async (req, res) => {
 
 exports.getUsersWithLevel = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'level'
             }
@@ -85,7 +85,7 @@ exports.getUsersWithLevel = async (req, res) => {
 
 exports.getUsersWithFaculty = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'faculty'
             }
@@ -102,7 +102,7 @@ exports.getUsersWithFaculty = async (req, res) => {
 
 exports.getUsersWithYear = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'year'
             }
@@ -119,7 +119,7 @@ exports.getUsersWithYear = async (req, res) => {
 
 exports.getUsersWithInterests = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'interests'
             }
@@ -136,7 +136,7 @@ exports.getUsersWithInterests = async (req, res) => {
 
 exports.getUsersWithAbout = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users`, {
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users`, {
             params: {
                 filter: 'about'
             }
@@ -153,7 +153,7 @@ exports.getUsersWithAbout = async (req, res) => {
 
 exports.getTop100Quizzing = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/scores/top100`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/scores/top100`);
         const scores = response.data;
 
         res.json(scores);
@@ -164,7 +164,7 @@ exports.getTop100Quizzing = async (req, res) => {
 
 exports.getTop100Downloaders = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/downloads/top100`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/downloads/top100`);
         const downloadsCount = response.data;
 
         res.json(downloadsCount);
@@ -175,7 +175,7 @@ exports.getTop100Downloaders = async (req, res) => {
 
 exports.getTop20Quizzes = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/scores/top20quizzes`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/scores/top20quizzes`);
         const quizStatistics = response.data;
 
         res.json(quizStatistics);
@@ -186,7 +186,7 @@ exports.getTop20Quizzes = async (req, res) => {
 
 exports.getQuizzesStats = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/scores/quizzesStats`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/scores/quizzesStats`);
         const quizStatistics = response.data;
 
         res.json(quizStatistics);
@@ -197,7 +197,7 @@ exports.getQuizzesStats = async (req, res) => {
 
 exports.getTop20Notes = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/downloads/top20notes`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/downloads/top20notes`);
         const notesStats = response.data;
 
         res.json(notesStats);
@@ -208,7 +208,7 @@ exports.getTop20Notes = async (req, res) => {
 
 exports.getNotesStats = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/downloads/notesStats`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/downloads/notesStats`);
         const notesStats = response.data;
 
         res.json(notesStats);
@@ -219,7 +219,7 @@ exports.getNotesStats = async (req, res) => {
 
 exports.getQuizCategoriesStats = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/scores/quizCategoriesStats`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/scores/quizCategoriesStats`);
         const categoriesStats = response.data;
 
         res.json(categoriesStats);
@@ -230,7 +230,7 @@ exports.getQuizCategoriesStats = async (req, res) => {
 
 exports.getNotesCategoriesStats = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/downloads/notesCategoriesStats`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/downloads/notesCategoriesStats`);
         const categoriesStats = response.data;
 
         res.json(categoriesStats);
@@ -241,7 +241,7 @@ exports.getNotesCategoriesStats = async (req, res) => {
 
 exports.getDailyUserRegistration = async (req, res) => {
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/users/dailyRegistration`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users/dailyRegistration`);
         const usersStats = response.data;
 
         res.json(usersStats);

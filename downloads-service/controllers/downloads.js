@@ -8,10 +8,10 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to fetch related data for a download
 const fetchDownloadDetails = async (download) => {
 
-    const notes = await axios.get(`${API_GATEWAY_URL}/notes/${download.notes}`);
-    const course = await axios.get(`${API_GATEWAY_URL}/courses/${download.course}`);
-    const chapter = await axios.get(`${API_GATEWAY_URL}/chapters/${download.chapter}`);
-    const user = await axios.get(`${API_GATEWAY_URL}/users/${download.downloaded_by}`);
+    const notes = await axios.get(`${API_GATEWAY_URL}/api/notes/${download.notes}`);
+    const course = await axios.get(`${API_GATEWAY_URL}/api/courses/${download.course}`);
+    const chapter = await axios.get(`${API_GATEWAY_URL}/api/chapters/${download.chapter}`);
+    const user = await axios.get(`${API_GATEWAY_URL}/api/users/${download.downloaded_by}`);
 
     return {
         ...download.toObject(),

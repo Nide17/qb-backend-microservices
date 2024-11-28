@@ -4,9 +4,9 @@ const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
 const fetchDetails = async (quizIds, categoryIds, userIds) => {
     return await Promise.all([
-        axios.get(`${API_GATEWAY_URL}/quizzes`, { params: { ids: quizIds } }),
-        axios.get(`${API_GATEWAY_URL}/categories`, { params: { ids: categoryIds } }),
-        axios.get(`${API_GATEWAY_URL}/users`, { params: { ids: userIds } })
+        axios.get(`${API_GATEWAY_URL}/api/quizzes`, { params: { ids: quizIds } }),
+        axios.get(`${API_GATEWAY_URL}/api/categories`, { params: { ids: categoryIds } }),
+        axios.get(`${API_GATEWAY_URL}/api/users`, { params: { ids: userIds } })
     ]);
 };
 
@@ -103,9 +103,9 @@ exports.getOneScore = async (req, res) => {
         if (!score) throw Error('No score found');
 
         const [quiz, category, user] = await Promise.all([
-            axios.get(`${API_GATEWAY_URL}/quizzes/${score.quiz}`),
-            axios.get(`${API_GATEWAY_URL}/categories/${score.category}`),
-            axios.get(`${API_GATEWAY_URL}/users/${score.taken_by}`)
+            axios.get(`${API_GATEWAY_URL}/api/quizzes/${score.quiz}`),
+            axios.get(`${API_GATEWAY_URL}/api/categories/${score.category}`),
+            axios.get(`${API_GATEWAY_URL}/api/api/users/${score.taken_by}`)
         ]);
 
         const scoreWithDetails = {
@@ -156,7 +156,7 @@ exports.getPopularQuizzes = async (req, res) => {
         ]).exec();
 
         const quizIds = topQuizzes.map(q => q._id);
-        const quizzes = await axios.get(`${API_GATEWAY_URL}/quizzes`, { params: { ids: quizIds } });
+        const quizzes = await axios.get(`${API_GATEWAY_URL}/api/quizzes`, { params: { ids: quizIds } });
 
         const popularQuizzes = topQuizzes.map(pq => ({
             _id: pq._id,
@@ -189,7 +189,7 @@ exports.getMonthlyUser = async (req, res) => {
         ]).exec();
 
         if (monthlyUser.length > 0) {
-            const user = await axios.get(`${API_GATEWAY_URL}/users/${monthlyUser[0]._id}`);
+            const user = await axios.get(`${API_GATEWAY_URL}/api/users/${monthlyUser[0]._id}`);
             res.json({
                 uName: user.data.name,
                 uPhoto: user.data.image

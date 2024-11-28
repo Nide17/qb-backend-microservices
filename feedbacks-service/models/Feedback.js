@@ -25,9 +25,9 @@ FeedbackSchema.methods.populateDetails = async function () {
 
   const axios = require('axios');
   const feedback = this;
-  const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/quizzes/${feedback.quiz}`);
-  const score = await axios.get(`${process.env.API_GATEWAY_URL}/scores/${feedback.score}`);
-  const user = score && await axios.get(`${process.env.API_GATEWAY_URL}/users/${score.data.taken_by}`);
+  const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${feedback.quiz}`);
+  const score = await axios.get(`${process.env.API_GATEWAY_URL}/api/scores/${feedback.score}`);
+  const user = score && await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.data.taken_by}`);
 
   feedback = feedback.toObject();
   feedback.quiz = quiz.data;
@@ -35,7 +35,7 @@ FeedbackSchema.methods.populateDetails = async function () {
     ...score.data,
     taken_by: user && user.data
   };
-  
+
   return feedback;
 };
 
