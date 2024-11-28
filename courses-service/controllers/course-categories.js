@@ -1,4 +1,4 @@
-const Category = require("../models/Category");
+const CourseCategory = require("../models/CourseCategory");
 const Course = require("../models/Course");
 const Chapter = require("../models/Chapter");
 const Notes = require("../models/Notes");
@@ -9,7 +9,7 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find category by ID
 const findCategoryById = async (id, res, selectFields = '') => {
     try {
-        const category = await Category.findById(id).select(selectFields);
+        const category = await CourseCategory.findById(id).select(selectFields);
         if (!category) return res.status(404).json({ msg: 'No category found!' });
         return category;
     } catch (err) {
@@ -19,7 +19,7 @@ const findCategoryById = async (id, res, selectFields = '') => {
 
 exports.getCategories = async (req, res) => {
     try {
-        const categories = await Category.find().sort({ createdAt: -1 });
+        const categories = await CourseCategory.find().sort({ createdAt: -1 });
         if (!categories) throw Error('No course categories found!');
         res.status(200).json(categories);
     } catch (err) {
@@ -41,10 +41,10 @@ exports.createCategory = async (req, res) => {
     }
 
     try {
-        const category = await Category.findOne({ title });
+        const category = await CourseCategory.findOne({ title });
         if (category) throw Error('Category already exists!');
 
-        const newCategory = new Category({ title, description, created_by });
+        const newCategory = new CourseCategory({ title, description, created_by });
         const savedCategory = await newCategory.save();
         if (!savedCategory) throw Error('Something went wrong during creation!');
 
@@ -59,7 +59,7 @@ exports.updateCategory = async (req, res) => {
         const category = await findCategoryById(req.params.id, res);
         if (!category) return;
 
-        const updatedCategory = await Category.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        const updatedCategory = await CourseCategory.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedCategory);
     } catch (error) {
         handleError(res, error);
@@ -78,7 +78,7 @@ exports.deleteCategory = async (req, res) => {
             Notes.deleteMany({ category: category._id })
         ]);
 
-        const removedCategory = await category.deleteOne();
+        const removedCategory = await CourseCategory.deleteOne();
         if (!removedCategory) throw Error('Something went wrong while deleting!');
 
         res.status(200).json({ msg: "Deleted successfully!" });

@@ -5,7 +5,7 @@ const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
 
 //create a schema object
-const CategorySchema = new Schema({
+const CourseCategorySchema = new Schema({
     title: {
         type: String,
         required: true,
@@ -23,4 +23,4 @@ const CategorySchema = new Schema({
     }
 }, { timestamps: true });
 
-module.exports = mongoose.model('Category', CategorySchema);
+module.exports = mongoose.model('CourseCategory', CourseCategorySchema);
