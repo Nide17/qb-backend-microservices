@@ -8,8 +8,9 @@ const router = express.Router()
 
 // GET routes
 router.get("/", auth, getUsers)
+router.get("/loadUser", auth, loadUser)
 router.get("/admins-emails", getAdminsEmails)
-router.get("/:id", authRole(['SuperAdmin']), getOneUser)
+router.get("/:id", getOneUser)
 
 // POST routes
 router.post("/login", login)

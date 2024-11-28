@@ -64,6 +64,7 @@ const UserSchema = new Schema({
 }, { timestamps: true })
 
 UserSchema.methods.populateSchoolData = async function () {
+  
   let user = this;
   const axios = require('axios');
   const schl = user.school && await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`);

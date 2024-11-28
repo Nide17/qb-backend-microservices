@@ -28,8 +28,12 @@ const BlogPostsViewSchema = new Schema({
 }, { timestamps: true, })
 
 BlogPostsViewSchema.methods.populateViewer = async function () {
+
+    const axios = require('axios');
     const view = this;
     const viewer = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${view.viewer}`);
+
+    view = view.toObject();
     view.viewer = viewer.data;
     return view;
 };

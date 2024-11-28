@@ -18,7 +18,6 @@ const PostsCategorySchema = new Schema({
     creator: {
         type: Schema.Types.ObjectId
     }
-},
-    { timestamps: true });
+}, { timestamps: true });
 
 module.exports = mongoose.model('PostsCategory', PostsCategorySchema);

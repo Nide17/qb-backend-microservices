@@ -58,9 +58,9 @@ exports.getCreatedBy = async (req, res) => {
 
 exports.createFaq = async (req, res) => {
     const { title, answer, created_by } = req.body;
-
+    
     // Simple validation
-    if (!title || !created_by || !answer) {
+    if (!title || !answer) {
         return res.status(400).json({ msg: 'Please fill required fields' });
     }
 

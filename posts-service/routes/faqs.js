@@ -10,7 +10,7 @@ router.get("/:id", getOneFaq)
 router.get("/created-by/:id", getCreatedBy)
 
 // POST routes
-router.post("/", authRole(['Admin', 'SuperAdmin']), createFaq)
+router.post("/", createFaq)
 // PUT routes
 router.put("/:id", authRole(['Admin', 'SuperAdmin']), updateFaq)
 router.put("/add-video/:id", authRole(['Admin', 'SuperAdmin']), addFaqVidLink)

@@ -31,7 +31,17 @@ const FaqSchema = new Schema({
             }
         ]
     }
-},
-    { timestamps: true });
+}, { timestamps: true });
+
+FaqSchema.methods.populateCreatedBy = async function () {
+
+    const axios = require('axios');
+    let faq = this;
+    const user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${faq.created_by}`);
+
+    faq = faq.toObject();
+    faq.created_by = user.data;
+    return faq;
+};
 
 module.exports = mongoose.model("Faq", FaqSchema);

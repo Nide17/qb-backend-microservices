@@ -62,6 +62,7 @@ exports.getUsers = async (req, res) => {
 }
 
 exports.getOneUser = async (req, res) => await findUserById(req.params.id, res, '-password -__v')
+exports.loadUser = async (req, res) => await findUserById(req.params.id, res, '-password -__v')
 
 exports.getAdminsEmails = async (req, res) => {
     try {
@@ -157,6 +158,7 @@ exports.logout = async (req, res) => {
 }
 
 exports.register = async (req, res) => {
+
     const { name, email, password } = req.body
     const emailTest = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -166,9 +168,11 @@ exports.register = async (req, res) => {
 
     try {
         const user = await User.findOne({ email })
+
         if (user && (user.verified || user.verified === undefined || user.verified === null)) {
             return res.status(400).json({ msg: 'User already exists, login instead!' })
         }
+
 
         const salt = await bcrypt.genSalt(10)
         if (!salt) throw Error('Something went wrong with bcrypt')

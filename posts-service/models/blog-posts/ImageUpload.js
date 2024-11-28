@@ -17,8 +17,12 @@ const ImageUploadSchema = new Schema({
 }, { timestamps: true, })
 
 ImageUploadSchema.methods.populateOwner = async function () {
+
+    const axios = require('axios');
     const upload = this;
     const owner = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${upload.owner}`);
+
+    upload = upload.toObject();
     upload.owner = owner.data;
     return upload;
 };
