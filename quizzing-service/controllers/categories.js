@@ -6,7 +6,7 @@ const handleError = (res, err, status = 400) => res.status(status).json({ msg: e
 // Helper function to find category by ID
 const findCategoryById = async (id, res, selectFields = '') => {
     try {
-        let category = await Category.findById(id).select(selectFields).populate('Quiz');
+        let category = await Category.findById(id).select(selectFields).populate('quizes');
         if (!category) return res.status(404).json({ msg: 'No category found!' });
 
         if (category.courseCategory) {
@@ -35,7 +35,7 @@ const checkCategoryExists = async (title) => {
 
 exports.getCategories = async (req, res) => {
     try {
-        let categories = await Category.find().sort({ createdAt: -1 }).populate('Quiz');
+        let categories = await Category.find().sort({ createdAt: -1 }).populate('quizes');
         if (!categories) return res.status(404).json({ msg: 'No categories found!' });
 
         categories = await Promise.all(categories.map(async (category) => await category.populateCourseCategory()));
