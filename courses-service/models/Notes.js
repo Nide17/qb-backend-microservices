@@ -55,6 +55,8 @@ NotesSchema.pre("validate", function (next) {
 })
 
 NotesSchema.methods.populateQuizzes = async function () {
+
+    const axios = require('axios');
     const notes = this;
     const quizzes = await Promise.all(
         notes.quizzes.map(async (quizId) => {
@@ -62,6 +64,8 @@ NotesSchema.methods.populateQuizzes = async function () {
             return quiz.data;
         })
     );
+
+    notes = notes.toObject();
     notes.quizzes = quizzes;
     return notes;
 };
