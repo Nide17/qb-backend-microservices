@@ -1,6 +1,5 @@
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
-const axios = require("axios")
 const crypto = require("crypto")
 const { S3 } = require("@aws-sdk/client-s3")
 const { sendEmail } = require("../utils/emails/sendEmail")

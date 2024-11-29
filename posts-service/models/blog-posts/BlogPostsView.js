@@ -34,7 +34,7 @@ BlogPostsViewSchema.methods.populateViewer = async function () {
     const viewer = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${view.viewer}`);
 
     view = view.toObject();
-    view.viewer = viewer.data;
+    view.viewer = viewer && { _id: viewer._id, name: viewer.name };
     return view;
 };
 

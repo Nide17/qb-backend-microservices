@@ -6,7 +6,7 @@ const router = express.Router()
 
 // GET routes
 router.get("/", getCategories)
-router.get("/:id", auth, getOneCategory)
+router.get("/:id", getOneCategory)
 
 // POST routes
 router.post("/", authRole(['Creator', 'Admin', 'SuperAdmin']), createCategory)

@@ -49,11 +49,11 @@ CategorySchema.pre("validate", function (next) {
 CategorySchema.methods.populateCourseCategory = async function () {
 
   const axios = require('axios');
-  const category = this;
+  let category = this;
   const courseCategory = await axios.get(`${process.env.API_GATEWAY_URL}/api/course-categories/${category.courseCategory}`);
 
   category = category.toObject();
-  category.courseCategory = courseCategory.data;
+  category.courseCategory = courseCategory && { _id: courseCategory._id, title: courseCategory.title };
   return category;
 };
 

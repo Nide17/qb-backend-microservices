@@ -72,9 +72,9 @@ UserSchema.methods.populateSchoolData = async function () {
   const faculty = user.faculty && await axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`);
 
   user = user.toObject();
-  user.school = schl && schl.data;
-  user.level = level && level.data;
-  user.faculty = faculty && faculty.data;
+  user.school = schl && { _id: schl.data._id, title: schl.data.title };
+  user.level = level && { _id: level.data._id, title: level.data.title };
+  user.faculty = faculty && { _id: faculty.data._id, title: faculty.data.title };
 
   return user;
 };

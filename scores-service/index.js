@@ -1,6 +1,6 @@
 const express = require('express')
-const mongoose = require('mongoose')
 const cors = require('cors')
+const compression = require('compression')
 const { createServer } = require("http");
 const dotenv = require('dotenv')
 
@@ -35,6 +35,7 @@ const corsOptions = {
 // Middlewares
 app.use(cors(corsOptions))
 app.use(express.json())
+app.use(compression())
 
 // Routes
 app.use("/api/scores", require('./routes/scores'))
@@ -42,11 +43,6 @@ app.use("/api/scores", require('./routes/scores'))
 // home route
 app.get('/', (req, res) => { res.send('Welcome to QB scores API') })
 
-mongoose
-    .connect(process.env.MONGODB_URI)
-    .then(() => {
-        httpServer.listen(process.env.PORT || 5006, () => {
-            console.log(`Scores service is running on port ${process.env.PORT || 5006}, and MongoDB is connected`)
-        })
-    })
-    .catch((err) => console.log(err))
+httpServer.listen(process.env.PORT || 5006, () => {
+    console.log(`Scores service is running on port ${process.env.PORT || 5006}`)
+})

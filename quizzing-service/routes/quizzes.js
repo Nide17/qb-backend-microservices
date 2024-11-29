@@ -1,5 +1,5 @@
 const express = require("express")
-const { getQuizzes, getPaginatedQuizzes, getOneQuiz, createQuiz, updateQuiz, deleteQuiz, getQuizzesByCategory, getQuizzesByNotes, addVidLink, deleteVideo, notifying } = require("../controllers/quizzes")
+const { getQuizzes, getPaginatedQuizzes, getOneQuiz, getQuizBySlug, createQuiz, updateQuiz, deleteQuiz, getQuizzesByCategory, getQuizzesByNotes, addVidLink, deleteVideo, notifying } = require("../controllers/quizzes")
 const { auth, authRole } = require("../middlewares/auth")
 
 const router = express.Router()
@@ -7,9 +7,10 @@ const router = express.Router()
 // GET routes
 router.get("/", getQuizzes)
 router.get("/paginated", getPaginatedQuizzes)
-router.get("/:quizSlug", getOneQuiz)
+router.get("/slug/:slug", getQuizBySlug)
 router.get("/category/:id", getQuizzesByCategory)
 router.get("/course-notes/:id", getQuizzesByNotes)
+router.get("/:id", getOneQuiz)
 
 // POST routes
 router.post("/", authRole(['Admin', 'SuperAdmin']), createQuiz)

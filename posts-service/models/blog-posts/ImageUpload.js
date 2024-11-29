@@ -23,7 +23,7 @@ ImageUploadSchema.methods.populateOwner = async function () {
     const owner = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${upload.owner}`);
 
     upload = upload.toObject();
-    upload.owner = owner.data;
+    upload.owner = owner && { _id: owner._id, name: owner.name };
     return upload;
 };
 

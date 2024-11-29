@@ -30,10 +30,9 @@ FeedbackSchema.methods.populateDetails = async function () {
   const user = score && await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.data.taken_by}`);
 
   feedback = feedback.toObject();
-  feedback.quiz = quiz.data;
+  feedback.quiz = quiz && { _id: quiz._id, title: quiz.title };
   feedback.score = score && {
-    ...score.data,
-    taken_by: user && user.data
+    _id: score.data._id, marks: score.data.marks, out_of: score.data.out_of, category: score.data.category, quiz: score.data.quiz, taken_by: user && { _id: user._id, name: user.name }
   };
 
   return feedback;

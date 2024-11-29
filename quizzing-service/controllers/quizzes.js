@@ -73,10 +73,23 @@ exports.getPaginatedQuizzes = async (req, res) => {
 
 exports.getOneQuiz = async (req, res) => {
     try {
-        const quiz = await Quiz.findOne({ slug: req.params.quizSlug })
+        const quiz = await Quiz.findOne({ _id: req.params.id })
             .populate('category questions').lean();
 
-        if (!quiz) throw new Error('Quiz not found!');
+        res.status(200).json(quiz);
+    } catch (err) {
+        handleError(res, err);
+    }
+};
+
+exports.getQuizBySlug = async (req, res) => {
+    try {
+        const quiz = await Quiz.findOne({ slug: req.params.slug })
+            .populate('category questions').lean();
+
+        if (!quiz) {
+            res.status(404).json({ msg: 'No quiz found!' });
+        }
 
         res.status(200).json(quiz);
     } catch (err) {

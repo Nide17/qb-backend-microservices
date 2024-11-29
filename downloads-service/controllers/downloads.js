@@ -34,7 +34,7 @@ exports.getDownloads = async (req, res) => {
     query.skip = PAGE_SIZE * (pageNo - 1);
 
     try {
-        const downloads = pageNo > 0 ?
+        let downloads = pageNo > 0 ?
             await Download.find({}, {}, query).sort({ createdAt: -1 }) :
             await Download.find().sort({ createdAt: -1 });
 
@@ -58,7 +58,7 @@ exports.getDownloads = async (req, res) => {
 
 exports.getDownloadsForNotesCreator = async (req, res) => {
     try {
-        const downloads = await Download.find({});
+        let downloads = await Download.find({});
         const result = await Promise.all(downloads.map(async (download) => {
             const details = await fetchDownloadDetails(download);
             return {
@@ -79,7 +79,7 @@ exports.getDownloadsForNotesCreator = async (req, res) => {
 exports.getDownloadsByUser = async (req, res) => {
 
     try {
-        const downloads = await Download.find({ downloaded_by: req.params.id });
+        let downloads = await Download.find({ downloaded_by: req.params.id });
 
         if (!downloads) throw Error('No downloads found!');
 

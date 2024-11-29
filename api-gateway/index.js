@@ -29,6 +29,7 @@ const routeToService = (serviceUrl) => async (req, res) => {
     } catch (error) {
 
         const response = error.response;
+        // console.error(response)
         res.status(response?.status || 500).send({ error: response?.data?.msg || 'Something went wrong' });
     }
 };
@@ -38,7 +39,7 @@ app.use('/api/users', routeToService(process.env.USERS_SERVICE_URL));
 app.use('/api/subscribed-users', routeToService(process.env.USERS_SERVICE_URL));
 
 // Quizzing Service
-app.use('/api/course-', routeToService(process.env.QUIZZING_SERVICE_URL));
+app.use('/api/categories', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/quizzes', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
 

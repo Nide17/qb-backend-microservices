@@ -66,7 +66,7 @@ NotesSchema.methods.populateQuizzes = async function () {
     );
 
     notes = notes.toObject();
-    notes.quizzes = quizzes;
+    notes.quizzes = quizzes && quizzes.map(quiz => ({ _id: quiz._id, title: quiz.title }));
     return notes;
 };
 

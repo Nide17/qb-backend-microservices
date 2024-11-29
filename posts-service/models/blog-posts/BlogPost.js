@@ -50,7 +50,7 @@ BlogPostSchema.methods.populateCreator = async function () {
     const creator = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${blogPost.creator}`);
 
     blogPost = blogPost.toObject();
-    blogPost.creator = creator.data;
+    blogPost.creator = creator && { _id: creator._id, name: creator.name };
     return blogPost;
 };
 

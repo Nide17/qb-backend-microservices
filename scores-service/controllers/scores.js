@@ -2,23 +2,6 @@ const axios = require('axios');
 const Score = require("../models/Score");
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
-const fetchDetails = async (quizIds, categoryIds, userIds) => {
-    return await Promise.all([
-        axios.get(`${API_GATEWAY_URL}/api/quizzes`, { params: { ids: quizIds } }),
-        axios.get(`${API_GATEWAY_URL}/api/categories`, { params: { ids: categoryIds } }),
-        axios.get(`${API_GATEWAY_URL}/api/users`, { params: { ids: userIds } })
-    ]);
-};
-
-const mapScoresWithDetails = (scores, quizzes, categories, users) => {
-    return scores.map(score => ({
-        ...score._doc,
-        quiz: quizzes.data.find(q => q._id === score.quiz),
-        category: categories.data.find(c => c._id === score.category),
-        taken_by: users.data.find(u => u._id === score.taken_by)
-    }));
-};
-
 exports.getScores = async (req, res) => {
 
     // Pagination
@@ -31,27 +14,24 @@ exports.getScores = async (req, res) => {
     query.skip = PAGE_SIZE * (pageNo - 1)
 
     try {
-        const scores = pageNo > 0 ?
+        let scores = pageNo > 0 ?
             await Score.find({}, {}, query).sort({ test_date: -1 }).exec() :
             await Score.find().sort({ test_date: -1 }).exec();
 
         if (!scores || scores.length === 0) throw Error('No scores found');
 
-        const quizIds = scores.map(score => score.quiz);
-        const categoryIds = scores.map(score => score.category);
-        const userIds = scores.map(score => score.taken_by);
-
-        const [quizzes, categories, users] = await fetchDetails(quizIds, categoryIds, userIds);
-
-        const scoresWithDetails = mapScoresWithDetails(scores, quizzes, categories, users);
+        scores = await Promise.all(scores.map(async score => {
+            const scoreInstance = new Score(score);
+            return await scoreInstance.populateQuizDetails();
+        }));
 
         if (pageNo > 0) {
             return res.status(200).json({
                 totalPages: Math.ceil(totalPages / PAGE_SIZE),
-                scores: scoresWithDetails
+                scores
             });
         } else {
-            return res.status(200).json({ scores: scoresWithDetails });
+            return res.status(200).json({ scores });
         }
     } catch (err) {
         return res.status(400).json({ msg: err.message });
@@ -59,19 +39,19 @@ exports.getScores = async (req, res) => {
 }
 
 exports.getScoresByTaker = async (req, res) => {
+
     let id = req.params.id;
+
     try {
-        const scores = await Score.find({ taken_by: id }).exec();
+        let scores = await Score.find({ taken_by: id }).exec();
         if (!scores) throw Error('No scores found');
 
-        const quizIds = scores.map(score => score.quiz);
-        const categoryIds = scores.map(score => score.category);
+        scores = await Promise.all(scores.map(async score => {
+            const scoreInstance = new Score(score);
+            return await scoreInstance.populateQuizDetails();
+        }));
 
-        const [quizzes, categories] = await fetchDetails(quizIds, categoryIds, []);
-
-        const scoresWithDetails = mapScoresWithDetails(scores, quizzes, categories, []);
-
-        res.status(200).json(scoresWithDetails);
+        res.status(200).json(scores);
     } catch (err) {
         res.status(400).json({ msg: 'Failed to retrieve! ' + err.message });
     }
@@ -79,43 +59,31 @@ exports.getScoresByTaker = async (req, res) => {
 
 exports.getScoresForQuizCreator = async (req, res) => {
     try {
-        const scores = await Score.find().exec();
+        let scores = await Score.find().exec();
         if (!scores) throw Error('No scores found');
 
-        const quizIds = scores.map(score => score.quiz);
-        const userIds = scores.map(score => score.taken_by);
-        const categoryIds = scores.map(score => score.category);
+        scores = await Promise.all(scores.map(async score => {
+            const scoreInstance = new Score(score);
+            return await scoreInstance.populateQuizDetails();
+        }));
 
-        const [quizzes, users, categories] = await fetchDetails(quizIds, categoryIds, userIds);
-
-        const scoresWithDetails = mapScoresWithDetails(scores, quizzes, categories, users);
-
-        res.status(200).json(scoresWithDetails);
+        res.status(200).json(scores);
     } catch (err) {
         res.status(400).json({ msg: 'Failed to retrieve: ' + err.message });
     }
 }
 
 exports.getOneScore = async (req, res) => {
+
     let id = req.params.id;
+
     try {
-        const score = await Score.findOne({ id }).exec();
+        let score = await Score.findOne({ id }).exec();
         if (!score) throw Error('No score found');
 
-        const [quiz, category, user] = await Promise.all([
-            axios.get(`${API_GATEWAY_URL}/api/quizzes/${score.quiz}`),
-            axios.get(`${API_GATEWAY_URL}/api/categories/${score.category}`),
-            axios.get(`${API_GATEWAY_URL}/api/api/users/${score.taken_by}`)
-        ]);
+        score = await score.populateQuizDetails();
+        res.status(200).json(score);
 
-        const scoreWithDetails = {
-            ...score._doc,
-            quiz: quiz.data,
-            category: category.data,
-            taken_by: user.data
-        };
-
-        res.status(200).json(scoreWithDetails);
     } catch (err) {
         res.status(400).json({ msg: 'Failed to retrieve! ' + err.message });
     }
@@ -124,17 +92,15 @@ exports.getOneScore = async (req, res) => {
 exports.getRanking = async (req, res) => {
     let id = req.params.id;
     try {
-        const scores = await Score.find({ quiz: id }).sort({ marks: -1 }).limit(20).exec();
+        let scores = await Score.find({ quiz: id }).sort({ marks: -1 }).limit(20).exec();
         if (!scores) throw Error('No scores found');
 
-        const userIds = scores.map(score => score.taken_by);
-        const categoryIds = scores.map(score => score.category);
+        scores = await Promise.all(scores.map(async score => {
+            const scoreInstance = new Score(score);
+            return await scoreInstance.populateQuizDetails();
+        }));
 
-        const [users, categories] = await fetchDetails([], categoryIds, userIds);
-
-        const scoresWithDetails = mapScoresWithDetails(scores, [], categories, users);
-
-        res.status(200).json(scoresWithDetails);
+        res.status(200).json(scores);
     } catch (err) {
         res.status(400).json({ msg: 'Failed to retrieve! ' + err.message });
     }
@@ -173,6 +139,7 @@ exports.getPopularQuizzes = async (req, res) => {
 }
 
 exports.getMonthlyUser = async (req, res) => {
+
     const startOfMonth = new Date();
     startOfMonth.setDate(1);
     startOfMonth.setHours(0, 0, 0, 0);

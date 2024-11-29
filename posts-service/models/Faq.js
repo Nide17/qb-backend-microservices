@@ -40,7 +40,7 @@ FaqSchema.methods.populateCreatedBy = async function () {
     const user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${faq.created_by}`);
 
     faq = faq.toObject();
-    faq.created_by = user.data;
+    faq.created_by = user && { _id: user.data._id, name: user.data.name };
     return faq;
 };
 

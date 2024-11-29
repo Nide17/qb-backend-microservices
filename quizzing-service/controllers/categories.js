@@ -46,7 +46,7 @@ exports.getCategories = async (req, res) => {
 };
 
 exports.getOneCategory = async (req, res) => {
-    const category = await findCategoryById(req.params.id, res);
+    let category = await findCategoryById(req.params.id, res);
     if (category) res.status(200).json(category);
 };
 

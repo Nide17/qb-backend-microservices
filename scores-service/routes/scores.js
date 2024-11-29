@@ -11,7 +11,7 @@ router.get("/ranking", getRanking)
 router.get("/popular-quizzes", getPopularQuizzes)
 router.get("/monthly-user", getMonthlyUser)
 router.get("/taken-by/:id", auth, getScoresByTaker)
-router.get("/:id", authRole(['Creator', 'Admin', 'SuperAdmin']), getOneScore)
+router.get("/:id", getOneScore)
 
 // POST routes
 router.post("/", createScore)
