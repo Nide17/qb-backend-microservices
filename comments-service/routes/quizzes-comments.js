@@ -6,8 +6,8 @@ const router = express.Router()
 
 // GET routes
 router.get("/", getQuizzesComments)
-router.get("/:id", getOneQuizComment)
 router.get("/quiz/:quizId", getCommentsByQuiz)
+router.get("/:id", getOneQuizComment)
 
 // POST routes
 router.post("/", auth, createQuizComment)

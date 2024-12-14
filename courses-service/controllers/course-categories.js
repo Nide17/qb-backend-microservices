@@ -2,9 +2,7 @@ const CourseCategory = require("../models/CourseCategory");
 const Course = require("../models/Course");
 const Chapter = require("../models/Chapter");
 const Notes = require("../models/Notes");
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find category by ID
 const findCategoryById = async (id, res, selectFields = '') => {
@@ -18,11 +16,13 @@ const findCategoryById = async (id, res, selectFields = '') => {
 };
 
 exports.getCategories = async (req, res) => {
+    
     try {
         const categories = await CourseCategory.find().sort({ createdAt: -1 });
         if (!categories) throw Error('No course categories found!');
         res.status(200).json(categories);
     } catch (err) {
+        console.log(err);
         handleError(res, err);
     }
 };

@@ -55,26 +55,37 @@ const UserSchema = new Schema({
   },
   otp: {
     type: String,
-    default: '',
+    default: ''
+  },
+  otpExpires: {
+    type: Date,
+    default: Date.now,
     expires: 900  // 15 minutes
   },
   verified: {
     type: Boolean,
+    default: false
   },
 }, { timestamps: true })
 
 UserSchema.methods.populateSchoolData = async function () {
-  
   let user = this;
   const axios = require('axios');
-  const schl = user.school && await axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`);
-  const level = user.level && await axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`);
-  const faculty = user.faculty && await axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`);
 
-  user = user.toObject();
-  user.school = schl && { _id: schl.data._id, title: schl.data.title };
-  user.level = level && { _id: level.data._id, title: level.data.title };
-  user.faculty = faculty && { _id: faculty.data._id, title: faculty.data.title };
+  try {
+    const [schl, level, faculty] = await Promise.all([
+      user.school ? axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`).catch(() => null) : null,
+      user.level ? axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`).catch(() => null) : null,
+      user.faculty ? axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`).catch(() => null) : null
+    ]);
+
+    user = user.toObject();
+    user.school = schl ? { _id: schl.data._id, title: schl.data.title } : null;
+    user.level = level ? { _id: level.data._id, title: level.data.title } : null;
+    user.faculty = faculty ? { _id: faculty.data._id, title: faculty.data.title } : null;
+  } catch (error) {
+    console.error('Error populating school data:', error);
+  }
 
   return user;
 };

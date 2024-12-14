@@ -6,8 +6,8 @@ const router = express.Router()
 
 // GET routes
 router.get("/", getFaqs)
-router.get("/:id", getOneFaq)
 router.get("/created-by/:id", getCreatedBy)
+router.get("/:id", getOneFaq)
 
 // POST routes
 router.post("/", createFaq)

@@ -1,6 +1,14 @@
 const axios = require('axios');
 const Score = require("../models/Score");
+const { handleError } = require('../utils/error');
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
+
+const handleScoresPopulation = async (scores) => {
+    return await Promise.all(scores.map(async score => {
+        const scoreInstance = new Score(score);
+        return await scoreInstance.populateQuizDetails();
+    }));
+};
 
 exports.getScores = async (req, res) => {
 
@@ -20,10 +28,7 @@ exports.getScores = async (req, res) => {
 
         if (!scores || scores.length === 0) throw Error('No scores found');
 
-        scores = await Promise.all(scores.map(async score => {
-            const scoreInstance = new Score(score);
-            return await scoreInstance.populateQuizDetails();
-        }));
+        scores = await handleScoresPopulation(scores);
 
         if (pageNo > 0) {
             return res.status(200).json({
@@ -34,7 +39,7 @@ exports.getScores = async (req, res) => {
             return res.status(200).json({ scores });
         }
     } catch (err) {
-        return res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 }
 
@@ -46,14 +51,11 @@ exports.getScoresByTaker = async (req, res) => {
         let scores = await Score.find({ taken_by: id }).exec();
         if (!scores) throw Error('No scores found');
 
-        scores = await Promise.all(scores.map(async score => {
-            const scoreInstance = new Score(score);
-            return await scoreInstance.populateQuizDetails();
-        }));
+        scores = await handleScoresPopulation(scores);
 
         res.status(200).json(scores);
     } catch (err) {
-        res.status(400).json({ msg: 'Failed to retrieve! ' + err.message });
+        handleError(res, err);
     }
 }
 
@@ -62,14 +64,11 @@ exports.getScoresForQuizCreator = async (req, res) => {
         let scores = await Score.find().exec();
         if (!scores) throw Error('No scores found');
 
-        scores = await Promise.all(scores.map(async score => {
-            const scoreInstance = new Score(score);
-            return await scoreInstance.populateQuizDetails();
-        }));
+        scores = await handleScoresPopulation(scores);
 
         res.status(200).json(scores);
     } catch (err) {
-        res.status(400).json({ msg: 'Failed to retrieve: ' + err.message });
+        handleError(res, err, 'Failed to retrieve: ');
     }
 }
 
@@ -79,13 +78,17 @@ exports.getOneScore = async (req, res) => {
 
     try {
         let score = await Score.findOne({ id }).exec();
+
+        if (score) {
+            score = await score.populateQuizDetails();
+        } else {
+            score = await Score.findOne({ _id: id }).exec();
+        }
+
         if (!score) throw Error('No score found');
-
-        score = await score.populateQuizDetails();
         res.status(200).json(score);
-
     } catch (err) {
-        res.status(400).json({ msg: 'Failed to retrieve! ' + err.message });
+        handleError(res, err);
     }
 }
 
@@ -95,14 +98,11 @@ exports.getRanking = async (req, res) => {
         let scores = await Score.find({ quiz: id }).sort({ marks: -1 }).limit(20).exec();
         if (!scores) throw Error('No scores found');
 
-        scores = await Promise.all(scores.map(async score => {
-            const scoreInstance = new Score(score);
-            return await scoreInstance.populateQuizDetails();
-        }));
+        scores = await handleScoresPopulation(scores);
 
         res.status(200).json(scores);
     } catch (err) {
-        res.status(400).json({ msg: 'Failed to retrieve! ' + err.message });
+        handleError(res, err);
     }
 }
 
@@ -133,8 +133,7 @@ exports.getPopularQuizzes = async (req, res) => {
 
         res.json(popularQuizzes);
     } catch (error) {
-        console.error(error);
-        res.status(400).json({ msg: 'Failed to retrieve popular quizzes!' });
+        handleError(res, error, 'Failed to retrieve popular quizzes! ');
     }
 }
 
@@ -165,8 +164,7 @@ exports.getMonthlyUser = async (req, res) => {
             res.json(null);
         }
     } catch (error) {
-        console.error(error);
-        res.status(400).json({ msg: 'Failed to retrieve monthly user!' });
+        handleError(res, error, 'Failed to retrieve monthly user! ');
     }
 }
 
@@ -192,7 +190,7 @@ exports.createScore = async (req, res) => {
                 })
             }
 
-            else if (recentScoreExist.length > 0) {
+            if (recentScoreExist.length > 0) {
                 // Check if the score was saved within 10 seconds
                 let testDate = new Date(recentScoreExist[0].test_date)
                 let seconds = Math.round((now - testDate) / 1000)
@@ -200,18 +198,8 @@ exports.createScore = async (req, res) => {
                 if (seconds < 60) {
                     return res.status(400).json({
                         msg: 'Score duplicate! You took this quiz in less than a minute ago!'
-
-                        // Score already saved, redirect to review or score.
                     })
                 }
-
-                else {
-                    console.log('newScore not recent')
-                }
-            }
-
-            else {
-                console.log('newScore total score')
             }
 
             const newScore = new Score({
@@ -227,29 +215,21 @@ exports.createScore = async (req, res) => {
 
             const savedScore = await newScore.save()
 
-            if (!savedScore) {
-                console.log('newScore not saved')
-                throw Error('Something went wrong during creation!')
-            }
+            if (!savedScore) throw Error('Something went wrong during creation!')
 
-            else {
-                console.log('newScore saved')
-
-                res.status(200).json({
-                    _id: savedScore._id,
-                    id: savedScore.id,
-                    marks: savedScore.marks,
-                    out_of: savedScore.out_of,
-                    test_date: savedScore.test_date,
-                    category: savedScore.category,
-                    quiz: savedScore.quiz,
-                    review: savedScore.review,
-                    taken_by: savedScore.taken_by
-                })
-            }
-
+            res.status(200).json({
+                _id: savedScore._id,
+                id: savedScore.id,
+                marks: savedScore.marks,
+                out_of: savedScore.out_of,
+                test_date: savedScore.test_date,
+                category: savedScore.category,
+                quiz: savedScore.quiz,
+                review: savedScore.review,
+                taken_by: savedScore.taken_by
+            })
         } catch (err) {
-            res.status(400).json({ msg: 'Failed to save score! ' + err.message })
+            handleError(res, err, 'Failed to save score! ');
         }
     }
 }
@@ -270,10 +250,7 @@ exports.deleteScore = async (req, res) => {
     }
 
     catch (err) {
-        res.status(400).json({
-            msg: 'Failed to delete! ' + err.message,
-            success: false
-        })
+        handleError(res, err, 'Failed to delete! ');
     }
 }
 

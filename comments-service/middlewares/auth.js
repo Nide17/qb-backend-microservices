@@ -11,7 +11,8 @@ const verifyToken = (req, res) => {
     req.user = decoded
     return decoded
   } catch (e) {
-    res.status(400).json({ msg: 'Session Expired, login again!' })
+    console.error("\n\nToken error: ", e, "\n\n")
+    res.status(400).json({ msg: 'Token is not valid' })
     return null
   }
 }

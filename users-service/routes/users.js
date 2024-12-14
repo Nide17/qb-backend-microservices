@@ -16,13 +16,13 @@ router.get("/:id", getOneUser)
 router.post("/login", login)
 router.post("/logout", logout)
 router.post("/register", register)
-router.post("/verifyOTP", verifyOTP)
-router.post("/sendResetLink", sendResetLink)
-router.post("/sendNewPassword", sendNewPassword)
+router.post("/verify-otp", verifyOTP)
+router.post("/forgot-password", sendResetLink)
+router.post("/reset-password", sendNewPassword)
 
 // PUT routes
-router.put("/updateProfileImage/:id", auth, profileUpload.single("profilePicture"), updateProfileImage)
-router.put("/updateProfile/:id", auth, updateProfile)
+router.put("/user-image/:id", auth, profileUpload.single("profilePicture"), updateProfileImage)
+router.put("/user-details/:id", auth, updateProfile)
 router.put("/:id", authRole(['SuperAdmin']), updateUser)
 
 // DELETE routes

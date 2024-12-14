@@ -84,14 +84,18 @@ ScoreSchema.methods.populateQuizDetails = async function () {
 
     let score = this;
     const axios = require('axios');
-    const catg = score.category && await axios.get(`${process.env.API_GATEWAY_URL}/api/categories/${score.category}`);
-    const qz = score.quiz && await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${score.quiz}`);
-    const usr = score.taken_by && await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.taken_by}`);
+    try {
+        const catg = score.category && await axios.get(`${process.env.API_GATEWAY_URL}/api/categories/${score.category}`);
+        const qz = score.quiz && await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${score.quiz}`);
+        const usr = score.taken_by && await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.taken_by}`);
 
-    score = score.toObject();
-    score.category = catg && { _id: catg.data._id, title: catg.data.title };
-    score.quiz = qz && { _id: qz.data._id, title: qz.data.title };
-    score.taken_by = usr && { _id: usr.data._id, role: usr.data.role, name: usr.data.name, email: usr.data.email };
+        score = score.toObject();
+        score.category = catg && { _id: catg.data._id, title: catg.data.title };
+        score.quiz = qz && { _id: qz.data._id, title: qz.data.title };
+        score.taken_by = usr && { _id: usr.data._id, role: usr.data.role, name: usr.data.name, email: usr.data.email };
+    } catch (error) {
+        console.error('Error fetching details:', error);
+    }
 
     return score;
 };

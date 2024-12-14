@@ -1,5 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose');
+const axios = require('axios');
 
 //initialize Mongo schema
 const Schema = mongoose.Schema;
@@ -34,13 +35,19 @@ const FaqSchema = new Schema({
 }, { timestamps: true });
 
 FaqSchema.methods.populateCreatedBy = async function () {
-
-    const axios = require('axios');
     let faq = this;
-    const user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${faq.created_by}`);
+    let user = null;
+
+    if (faq.created_by) {
+        try {
+            user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${faq.created_by}`);
+        } catch (error) {
+            user = null;
+        }
+    }
 
     faq = faq.toObject();
-    faq.created_by = user && { _id: user.data._id, name: user.data.name };
+    faq.created_by = user && user.data && { _id: user.data._id, name: user.data.name };
     return faq;
 };
 

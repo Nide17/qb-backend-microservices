@@ -14,23 +14,49 @@ app.get('/api/health', (req, res) => {
     res.send({ status: 'API Gateway is running' });
 });
 
-const routeToService = (serviceUrl) => async (req, res) => {
+const retryRequest = async (req, serviceUrl, retries = 3) => {
+    for (let i = 0; i < retries; i++) {
+        try {
+            const response = await axios({
+                method: req.method,
+                url: `${serviceUrl}${req.originalUrl}`,
+                data: req.body,
+                headers: { 'x-auth-token': req.header('x-auth-token') },
+            });
+            return response;
+        } catch (error) {
+            if (error.code === 'ECONNREFUSED' && i < retries - 1) {
+                console.log(`Retrying request to ${serviceUrl}${req.originalUrl} (${i + 1}/${retries})`);
+                await new Promise(res => setTimeout(res, 1000)); // Wait 1 second before retrying
+            } else {
+                throw error;
+            }
+        }
+    }
+};
 
+const routeToService = (serviceUrl) => async (req, res) => {
     console.log(`Routing request to ${serviceUrl}${req.originalUrl}`);
 
     try {
-        const response = await axios({
-            method: req.method,
-            url: `${serviceUrl}${req.originalUrl}`,
-            data: req.body,
-            headers: { 'x-auth-token': req.header('x-auth-token') },
-        });
+        const response = await retryRequest(req, serviceUrl);
         res.status(response.status).send(response.data);
     } catch (error) {
-
-        const response = error.response;
-        // console.error(response)
-        res.status(response?.status || 500).send({ error: response?.data?.msg || 'Something went wrong' });
+        if (error.code === 'ECONNREFUSED') {
+            res.status(502).send({
+                error: `Service at ${serviceUrl} [${req.originalUrl.split('/')[2]}] is unavailable`
+            });
+        } else if (error.response) {
+            const response = error.response;
+            res.status(response.status).send({
+                error: response.data.msg || response.data.error
+            });
+        } else {
+            console.error("Error in API Gateway:", error);
+            res.status(500).send({
+                error: `Something went wrong: ${req.originalUrl.split('/')[2]}`
+            });
+        }
     }
 };
 
@@ -47,8 +73,8 @@ app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
 app.use('/api/adverts', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/faqs', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/blog-posts', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/posts-course-', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/image-ploads', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/post-categories', routeToService(process.env.POSTS_SERVICE_URL));
+app.use('/api/image-uploads', routeToService(process.env.POSTS_SERVICE_URL));
 app.use('/api/blog-posts-views', routeToService(process.env.POSTS_SERVICE_URL));
 
 // Schools Service

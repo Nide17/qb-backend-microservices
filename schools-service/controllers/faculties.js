@@ -1,7 +1,5 @@
 const Faculty = require("../models/Faculty");
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find faculty by ID
 const findFacultyById = async (id, res, selectFields = '') => {

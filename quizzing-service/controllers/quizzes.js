@@ -2,18 +2,21 @@ const axios = require('axios');
 const Quiz = require("../models/Quiz");
 const Category = require("../models/Category");
 const Question = require("../models/Question");
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => {
-    console.error(err);
-    res.status(status).json({ msg: err.message });
-}
+const { handleError } = require('../utils/error');
 
 // Helper function to find quiz by ID
 const findQuizById = async (id, res, selectFields = '') => {
+    if (!isValidObjectId(id)) {
+        return res.status(400).json({ msg: 'Invalid quiz ID' });
+    }
     try {
-        const quiz = await Quiz.findById(id).select(selectFields).populate('category questions');
+        let quiz = await Quiz.findById(id).select(selectFields)
+            .populate('category questions');
+
         if (!quiz) return res.status(404).json({ msg: 'No quiz found!' });
+
+        quiz = await quiz.populateCreatedBy();
+
         return quiz;
     } catch (err) {
         return handleError(res, err);
@@ -25,13 +28,15 @@ const getQuizzesWithPagination = async (query, pageNo, pageSize, res) => {
     const skip = pageSize * (pageNo - 1);
     try {
         const totalQuizzes = await Quiz.countDocuments(query);
-        const quizzes = await Quiz.find(query)
+        let quizzes = await Quiz.find(query)
             .sort({ creation_date: -1 })
             .populate('category questions')
             .limit(pageSize)
             .skip(skip);
 
         if (!quizzes.length) throw new Error('No quizzes found');
+
+        quizzes = await Promise.all(quizzes.map(async quiz => await quiz.populateCreatedBy()));
 
         res.status(200).json({
             totalPages: Math.ceil(totalQuizzes / pageSize),
@@ -42,18 +47,25 @@ const getQuizzesWithPagination = async (query, pageNo, pageSize, res) => {
     }
 };
 
+// Helper function to populate quizzes
+const populateQuizzes = async (quizzes) => {
+    return await Promise.all(quizzes.map(async quiz => await quiz.populateCreatedBy()));
+};
+
 exports.getQuizzes = async (req, res) => {
     const limit = parseInt(req.query.limit) || 10;
     const skip = parseInt(req.query.skip) || 0;
 
     try {
-        const quizzes = await Quiz.find({})
-            .sort({ createdAt: -1 })
+        let quizzes = await Quiz.find({})
+            .sort({ creation_date: -1 })
             .populate('category questions')
             .limit(limit)
             .skip(skip);
 
-        if (!quizzes) throw new Error('No quizzes found');
+        if (!quizzes.length) throw new Error('No quizzes found');
+
+        quizzes = await populateQuizzes(quizzes);
         res.status(200).json(quizzes);
     } catch (err) {
         handleError(res, err);
@@ -64,7 +76,7 @@ exports.getPaginatedQuizzes = async (req, res) => {
     const PAGE_SIZE = 12;
     const pageNo = parseInt(req.query.pageNo || "0");
 
-    const query = req.user.role === 'Creator'
+    const query = req.user && req.user.role === 'Creator'
         ? { created_by: req.user._id }
         : {};
 
@@ -73,25 +85,15 @@ exports.getPaginatedQuizzes = async (req, res) => {
 
 exports.getOneQuiz = async (req, res) => {
     try {
-        const quiz = await Quiz.findOne({ _id: req.params.id })
-            .populate('category questions').lean();
 
-        res.status(200).json(quiz);
-    } catch (err) {
-        handleError(res, err);
-    }
-};
+        const id = req.params.id;
+        const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slug: id };
 
-exports.getQuizBySlug = async (req, res) => {
-    try {
-        const quiz = await Quiz.findOne({ slug: req.params.slug })
-            .populate('category questions').lean();
+        const quiz = await Quiz.findOne(query).populate('category questions');
+        if (!quiz) throw new Error('No quiz found!');
 
-        if (!quiz) {
-            res.status(404).json({ msg: 'No quiz found!' });
-        }
-
-        res.status(200).json(quiz);
+        const populatedQuiz = await quiz.populateCreatedBy();
+        res.status(200).json(populatedQuiz);
     } catch (err) {
         handleError(res, err);
     }
@@ -99,9 +101,11 @@ exports.getQuizBySlug = async (req, res) => {
 
 exports.getQuizzesByCategory = async (req, res) => {
     try {
-        const quizzes = await Quiz.find({ category: req.params.id })
+        let quizzes = await Quiz.find({ category: req.params.id })
             .populate('category questions');
         if (!quizzes.length) throw new Error('No quizzes found');
+
+        quizzes = await populateQuizzes(quizzes);
         res.status(200).json(quizzes);
     } catch (err) {
         handleError(res, err);
@@ -113,8 +117,10 @@ exports.getQuizzesByNotes = async (req, res) => {
         const categories = await Category.find({ category: req.params.id });
         if (!categories.length) throw new Error('No category found!');
 
-        const quizzes = await Quiz.find({ category: { $in: categories } }).populate('category questions');
+        let quizzes = await Quiz.find({ category: { $in: categories } }).populate('category questions');
         if (!quizzes.length) throw new Error('No quizzes found!');
+
+        quizzes = await populateQuizzes(quizzes);
 
         res.status(200).json(quizzes);
     } catch (err) {
@@ -152,12 +158,16 @@ exports.notifying = async (req, res) => {
     try {
         const { slug, title, category, created_by } = req.body;
 
-        // Get subscribers from the API Gateway using axios
-        const { data: subscribers } = await axios.get(`${process.env.API_GATEWAY_URL}/api/subscribed-users`);
+        let subscribers = [];
 
-        console.log(subscribers);
+        try {
+            const { data } = await axios.get(`${process.env.API_GATEWAY_URL}/api/subscribed-users`);
+            subscribers = data;
+        } catch (error) {
+            console.error('Error fetching subscribers:', error.message);
+        }
+
         const clientURL = req.headers.origin;
-        console.log(clientURL);
 
         subscribers.forEach(sub => {
             sendEmail(
@@ -239,6 +249,9 @@ exports.deleteQuiz = async (req, res) => {
 };
 
 exports.deleteVideo = async (req, res) => {
+    if (!isValidObjectId(req.body.qID)) {
+        return res.status(400).json({ msg: 'Invalid quiz ID' });
+    }
     try {
         const quiz = await findQuizById(req.body.qID, res);
         if (!quiz) return;

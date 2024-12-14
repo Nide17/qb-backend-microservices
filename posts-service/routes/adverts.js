@@ -7,9 +7,9 @@ const router = express.Router()
 
 // GET routes
 router.get("/", getAdverts)
-router.get("/:id", getOneAdvert)
 router.get("/active", getActiveAdverts)
 router.get("/created-by/:id", getCreatedBy)
+router.get("/:id", getOneAdvert)
 
 // POST routes
 router.post("/", authRole(['Admin', 'SuperAdmin']), advertUpload.single('advert_image'), createAdvert)

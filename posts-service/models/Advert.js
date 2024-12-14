@@ -34,7 +34,6 @@ const AdvertSchema = new Schema({
         required: true,
         default: "Inactive"
     }
-},
-    { timestamps: true });
+}, { timestamps: true });
 
 module.exports = mongoose.model("Advert", AdvertSchema);

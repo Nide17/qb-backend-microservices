@@ -5,6 +5,7 @@ const { S3 } = require("@aws-sdk/client-s3")
 const { sendEmail } = require("../utils/emails/sendEmail")
 const User = require("../models/User")
 const PswdResetToken = require("../models/PswdResetToken")
+const { handleError } = require("../utils/error")
 
 const s3Config = new S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -12,12 +13,6 @@ const s3Config = new S3({
     Bucket: process.env.S3_BUCKET,
     region: process.env.AWS_REGION,
 })
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => {
-    console.error(err)
-    res.status(status).json({ msg: err.message })
-}
 
 // Helper function to find user by ID
 const findUserById = async (id, res, selectFields = '') => {
@@ -60,8 +55,8 @@ exports.getUsers = async (req, res) => {
     }
 }
 
-exports.getOneUser = async (req, res) => await findUserById(req.params.id, res, '-password -__v')
-exports.loadUser = async (req, res) => await findUserById(req.params.id, res, '-password -__v')
+exports.getOneUser = async (req, res) => await findUserById(req.params.id, res, 'name email')
+exports.loadUser = async (req, res) => await findUserById(req.user._id, res, '-password -__v')
 
 exports.getAdminsEmails = async (req, res) => {
     try {
@@ -85,10 +80,11 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) throw Error('Incorrect E-mail or Password!')
 
-        if (!user.verified) {
+        // user.register_date < 1 december 2024
+        if (!user.verified && new Date(user.register_date) > new Date('2024-12-09')) {
             const otp = Math.floor(100000 + Math.random() * 900000).toString()
             await User.findOneAndUpdate({ email }, { otp })
-            console.log(email, otp)
+            
             await sendEmail(user.email,
                 "One Time Password (OTP) verification for Quiz Blog account",
                 { name: user.name, otp }, "./template/otp.handlebars")

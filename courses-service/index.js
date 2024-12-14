@@ -21,9 +21,8 @@ const corsOptions = {
         if (!origin || allowList.includes(origin)) {
             callback(null, true)
         } else {
-            callback(null, true) // all allowed
             console.log(origin + ' is not allowed by CORS')
-            // callback(new Error('Not allowed by CORS'))
+            callback(new Error('Not allowed by CORS'))
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -44,6 +43,15 @@ app.use("/api/notes", require('./routes/notes'))
 
 // home route
 app.get('/', (req, res) => { res.send('Welcome to QB courses API') })
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    if (err) {
+        res.status(500).json({ error: err.message });
+    } else {
+        next();
+    }
+});
 
 mongoose
     .connect(process.env.MONGODB_URI)

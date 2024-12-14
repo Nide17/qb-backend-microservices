@@ -1,5 +1,6 @@
 const { S3 } = require("@aws-sdk/client-s3");
 const Advert = require("../models/Advert.js");
+const { handleError } = require("../utils/error");
 
 const s3Config = new S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -7,12 +8,6 @@ const s3Config = new S3({
     Bucket: process.env.S3_BUCKET,
     region: process.env.AWS_REGION
 });
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => {
-    console.error(err);
-    res.status(status).json({ msg: err.message });
-};
 
 // Helper function to find advert by ID
 const findAdvertById = async (id, res, selectFields = '') => {

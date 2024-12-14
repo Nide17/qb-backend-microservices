@@ -1,8 +1,6 @@
-const RoomMessage = require("../models/RoomMessage");
 const axios = require('axios');
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const RoomMessage = require("../models/RoomMessage");
+const { handleError } = require('../utils/error');
 
 // Helper function to find roomMessage by ID
 const findRoomMessageById = async (id, res, selectFields = '') => {
@@ -28,10 +26,16 @@ exports.getRoomMessages = async (req, res) => {
         let roomMessages = await RoomMessage.find().sort({ createdAt: -1 });
 
         for (const roomMessage of roomMessages) {
-            const senderResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.sender}`);
-            const receiverResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.receiver}`);
-            roomMessage.sender = senderResponse.data;
-            roomMessage.receiver = receiverResponse.data;
+            try {
+                const senderResponse = roomMessage.sender ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.sender}`) : null;
+                const receiverResponse = roomMessage.receiver ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.receiver}`) : null;
+                roomMessage.sender = senderResponse ? senderResponse.data : null;
+                roomMessage.receiver = receiverResponse ? receiverResponse.data : null;
+            } catch (fetchError) {
+                console.error('Error fetching user data:', fetchError);
+                roomMessage.sender = null;
+                roomMessage.receiver = null;
+            }
         }
         res.status(200).json(roomMessages);
     } catch (err) {

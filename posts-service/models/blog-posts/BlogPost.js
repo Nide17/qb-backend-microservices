@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const slugify = require("slugify")
+const axios = require('axios');
 
 const Schema = mongoose.Schema
 
@@ -10,9 +11,9 @@ const BlogPostSchema = new Schema({
         type: String,
         required: true,
     },
-    postsCategory: {
+    postCategory: {
         type: Schema.Types.ObjectId,
-        ref: 'PostsCategory'
+        ref: 'PostCategory'
     },
     post_image: String,
     markdown: {
@@ -44,13 +45,19 @@ BlogPostSchema.pre("validate", function (next) {
 })
 
 BlogPostSchema.methods.populateCreator = async function () {
+    let blogPost = this;
+    let creator = null;
 
-    const axios = require('axios');
-    const blogPost = this;
-    const creator = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${blogPost.creator}`);
+    if (blogPost.creator) {
+        try {
+            creator = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${blogPost.creator}`);
+        } catch (error) {
+            creator = null;
+        }
+    }
 
     blogPost = blogPost.toObject();
-    blogPost.creator = creator && { _id: creator._id, name: creator.name };
+    blogPost.creator = creator && creator.data && { _id: creator.data._id, name: creator.data.name };
     return blogPost;
 };
 

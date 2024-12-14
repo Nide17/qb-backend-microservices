@@ -1,5 +1,6 @@
 const axios = require('axios');
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
+const { handleError } = require('../utils/error');
 
 exports.get50NewUsers = async (req, res) => {
     try {
@@ -15,7 +16,7 @@ exports.get50NewUsers = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -28,7 +29,7 @@ exports.getAllUsers = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -45,7 +46,7 @@ exports.getUsersWithImage = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -62,7 +63,7 @@ exports.getUsersWithSchool = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -79,7 +80,7 @@ exports.getUsersWithLevel = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -96,7 +97,7 @@ exports.getUsersWithFaculty = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -113,7 +114,7 @@ exports.getUsersWithYear = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -130,7 +131,7 @@ exports.getUsersWithInterests = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -147,7 +148,7 @@ exports.getUsersWithAbout = async (req, res) => {
 
         res.status(200).json(users);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -158,7 +159,7 @@ exports.getTop100Quizzing = async (req, res) => {
 
         res.json(scores);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -169,7 +170,7 @@ exports.getTop100Downloaders = async (req, res) => {
 
         res.json(downloadsCount);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -180,7 +181,7 @@ exports.getTop20Quizzes = async (req, res) => {
 
         res.json(quizStatistics);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -191,7 +192,7 @@ exports.getQuizzesStats = async (req, res) => {
 
         res.json(quizStatistics);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -202,7 +203,7 @@ exports.getTop20Notes = async (req, res) => {
 
         res.json(notesStats);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -213,7 +214,7 @@ exports.getNotesStats = async (req, res) => {
 
         res.json(notesStats);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -224,7 +225,7 @@ exports.getQuizCategoriesStats = async (req, res) => {
 
         res.json(categoriesStats);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -235,7 +236,7 @@ exports.getNotesCategoriesStats = async (req, res) => {
 
         res.json(categoriesStats);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };
 
@@ -246,6 +247,6 @@ exports.getDailyUserRegistration = async (req, res) => {
 
         res.json(usersStats);
     } catch (err) {
-        res.status(400).json({ msg: err.message });
+        handleError(res, err);
     }
 };

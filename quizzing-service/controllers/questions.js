@@ -1,6 +1,7 @@
 const Question = require("../models/Question");
 const Quiz = require("../models/Quiz");
 const { S3 } = require("@aws-sdk/client-s3");
+const { handleError } = require('../utils/error');
 
 // AWS S3 Configuration
 const s3Config = new S3({
@@ -9,9 +10,6 @@ const s3Config = new S3({
     Bucket: process.env.S3_BUCKET,
     region: process.env.AWS_REGION,
 });
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
 
 // Helper function to find question by ID
 const findQuestionById = async (id, res, selectFields = '') => {
@@ -51,8 +49,9 @@ const updateQuizQuestions = async (quizId, questionId, action) => {
 };
 
 exports.getQuestions = async (req, res) => {
+    console.log('getQuestions');
     try {
-        const questions = await Question.find().sort({ createdAt: -1 }).populate('category quiz');w;
+        const questions = await Question.find().sort({ createdAt: -1 }).populate('category quiz');
         if (!questions) return res.status(404).json({ msg: 'No questions found!' });
         res.status(200).json(questions);
     } catch (err) {

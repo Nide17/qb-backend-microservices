@@ -1,7 +1,5 @@
 const Faq = require("../models/Faq");
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find faq by ID
 const findFaqById = async (id, res, selectFields = '') => {

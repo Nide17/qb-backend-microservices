@@ -6,7 +6,7 @@ const router = express.Router()
 
 // GET routes
 router.get("/", auth, getContacts)
-router.get("/", auth, getContactsBySender)
+router.get("/sender/:id", auth, getContactsBySender)
 router.get("/:id", auth, getOneContact)
 
 // POST routes

@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const slugify = require("slugify")
+const axios = require('axios');
 
 //initialize Mongo schema
 const Schema = mongoose.Schema
@@ -27,7 +28,7 @@ const NotesSchema = new Schema({
     },
     courseCategory: {
         type: Schema.Types.ObjectId,
-        ref: 'Category'
+        ref: 'CourseCategory'
     },
     slug: {
         type: String,
@@ -56,17 +57,21 @@ NotesSchema.pre("validate", function (next) {
 
 NotesSchema.methods.populateQuizzes = async function () {
 
-    const axios = require('axios');
-    const notes = this;
+    let notes = this;
+
     const quizzes = await Promise.all(
         notes.quizzes.map(async (quizId) => {
-            const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${quizId}`);
-            return quiz.data;
+            try {
+                const quiz = quizId ? await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${quizId}`) : null;
+                return quiz ? quiz.data : null;
+            } catch (error) {
+                return null;
+            }
         })
     );
 
     notes = notes.toObject();
-    notes.quizzes = quizzes && quizzes.map(quiz => ({ _id: quiz._id, title: quiz.title }));
+    notes.quizzes = quizzes ? quizzes.map(quiz => quiz ? ({ _id: quiz._id, title: quiz.title }) : null) : null;
     return notes;
 };
 

@@ -1,5 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose');
+const axios = require('axios');
 
 //initialize Mongo schema
 const Schema = mongoose.Schema;
@@ -22,20 +23,30 @@ const FeedbackSchema = new Schema({
 }, { timestamps: true });
 
 FeedbackSchema.methods.populateDetails = async function () {
+  let feedback = this;
 
-  const axios = require('axios');
-  const feedback = this;
-  const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${feedback.quiz}`);
-  const score = await axios.get(`${process.env.API_GATEWAY_URL}/api/scores/${feedback.score}`);
-  const user = score && await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.data.taken_by}`);
+  try {
+    const [quiz, score] = await Promise.all([
+      feedback.quiz ? axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${feedback.quiz}`) : null,
+      feedback.score ? axios.get(`${process.env.API_GATEWAY_URL}/api/scores/${feedback.score}`) : null
+    ]);
 
-  feedback = feedback.toObject();
-  feedback.quiz = quiz && { _id: quiz._id, title: quiz.title };
-  feedback.score = score && {
-    _id: score.data._id, marks: score.data.marks, out_of: score.data.out_of, category: score.data.category, quiz: score.data.quiz, taken_by: user && { _id: user._id, name: user.name }
-  };
+    const user = score?.data?.taken_by ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.data.taken_by}`) : null;
 
-  return feedback;
+    feedback = feedback.toObject();
+    feedback.quiz = quiz ? { _id: quiz.data._id, title: quiz.data.title } : null;
+    feedback.score = score?.data ? {
+      _id: score.data._id,
+      marks: score.data.marks,
+      out_of: score.data.out_of,
+      taken_by: user ? { _id: user.data._id, name: user.data.name } : null
+    } : null;
+
+    return feedback;
+  } catch (error) {
+    console.error('Error populating feedback details:', error);
+    return feedback;
+  }
 };
 
 module.exports = mongoose.model('Feedback', FeedbackSchema);

@@ -14,16 +14,15 @@ const allowList = [
     'http://localhost:5173',
     'http://localhost:4000',
     'http://localhost:5009',
-]
+];
 
 const corsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowList.includes(origin)) {
-            callback(null, true)
+            callback(null, true);
         } else {
-            callback(null, true) // all allowed
-            console.log(origin + ' is not allowed by CORS')
-            // callback(new Error('Not allowed by CORS'))
+            console.log(origin + ' is not allowed by CORS');
+            callback(new Error('Not allowed by CORS'));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -46,7 +45,7 @@ mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
         httpServer.listen(process.env.PORT || 5009, () => {
-            console.log(`Feedbacks service is running on port ${process.env.PORT || 5009}, and MongoDB is connected`)
-        })
+            console.log(`Feedbacks service is running on port ${process.env.PORT || 5009}, and MongoDB is connected`);
+        });
     })
-    .catch((err) => console.log(err))
+    .catch((err) => console.log(err));

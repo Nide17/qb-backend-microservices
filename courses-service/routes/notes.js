@@ -10,7 +10,7 @@ router.get("/", getNotes)
 router.get("/limited", getLimitedNotes)
 router.get("/category/:id", getNotesByCategory)
 router.get("/chapter/:id", getNotesByChapter)
-router.get("/:slug", getOneNotes)
+router.get("/:id", getOneNotes) // Combine slug and id into one route
 
 // POST routes
 router.post("/", authRole(['Creator', 'Admin', 'SuperAdmin']), notesUpload.single('notes_file'), createNotes)

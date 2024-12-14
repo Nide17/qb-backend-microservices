@@ -1,6 +1,7 @@
 const BlogPostsView = require("../../models/blog-posts/BlogPostsView");
 const scheduledReportMessage = require('./scheduledReport');
 const { S3 } = require("@aws-sdk/client-s3");
+const { handleError } = require('../../utils/error');
 
 const s3Config = new S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
@@ -11,9 +12,6 @@ const s3Config = new S3({
 
 // SCHEDULED REPORT MESSAGE
 scheduledReportMessage();
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
 
 // Helper function to find blogPostsView by ID
 const findBlogPostsViewById = async (id, res, selectFields = '') => {
@@ -47,7 +45,7 @@ exports.getOneBlogPostsView = async (req, res) => {
 
 exports.getRecentTenViews = async (req, res) => {
     try {
-        let blogPostsViews = await BlogPostsView.find({ postsCategory: req.params.id }).sort({ createdAt: -1 }).limit(10);
+        let blogPostsViews = await BlogPostsView.find({ postCategory: req.params.id }).sort({ createdAt: -1 }).limit(10);
         if (!blogPostsViews) return res.status(404).json({ msg: 'No blogPostsViews found!' });
 
         blogPostsViews = await Promise.all(blogPostsViews.map(async (post) => await post.populateViewer()));
@@ -59,10 +57,10 @@ exports.getRecentTenViews = async (req, res) => {
 
 exports.createBlogPostsView = async (req, res) => {
     const bp_image = req.file ? req.file : null;
-    const { title, markdown, postsCategory, creator, bgColor } = req.body;
+    const { title, markdown, postCategory, creator, bgColor } = req.body;
 
     // Simple validation
-    if (!title || !markdown || !postsCategory || !creator) {
+    if (!title || !markdown || !postCategory || !creator) {
         return res.status(400).json({ msg: 'Please provide all required fields' });
     }
 
@@ -71,7 +69,7 @@ exports.createBlogPostsView = async (req, res) => {
             title,
             post_image: bp_image && bp_image.location,
             markdown,
-            postsCategory,
+            postCategory,
             creator,
             bgColor
         });
@@ -85,7 +83,7 @@ exports.createBlogPostsView = async (req, res) => {
             title: savedBlogPost.title,
             post_image: savedBlogPost.post_image,
             markdown: savedBlogPost.markdown,
-            postsCategory: savedBlogPost.postsCategory,
+            postCategory: savedBlogPost.postCategory,
             creator: savedBlogPost.creator,
             bgColor: savedBlogPost.bgColor,
             slug: savedBlogPost.slug

@@ -5,7 +5,7 @@ const { auth, authRole } = require("../middlewares/auth")
 const router = express.Router()
 
 // GET routes
-router.get("/", authRole(['Creator', 'Admin', 'SuperAdmin']), getDownloads)
+router.get("/", getDownloads)
 router.get("/notes-creator/:id", authRole(['Creator', 'Admin', 'SuperAdmin']), getDownloadsForNotesCreator)
 router.get("/downloaded-by/:id", auth, getDownloadsByUser)
 

@@ -1,8 +1,7 @@
+const axios = require('axios');
 const Broadcast = require("../models/Broadcast");
-const { sendEmail } = require("../utils/emails/sendEmail")
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { sendEmail } = require("../utils/emails/sendEmail");
+const { handleError } = require('../utils/error');
 
 // Helper function to find broadcast by ID
 const findBroadcastById = async (id, res, selectFields = '') => {
@@ -33,6 +32,16 @@ const sendEmails = (recipients, title, message, clientURL) => {
     });
 };
 
+// Helper function to fetch data from API
+const fetchData = async (url, res) => {
+    try {
+        const response = await axios.get(url);
+        return response.data;
+    } catch (err) {
+        return handleError(res, err);
+    }
+};
+
 exports.getBroadcasts = async (req, res) => {
     try {
         const broadcasts = await Broadcast.find().sort({ createdAt: -1 });
@@ -44,14 +53,13 @@ exports.getBroadcasts = async (req, res) => {
 
 exports.getOneBroadcast = async (req, res) => {
     const broadcast = await findBroadcastById(req.params.id, res);
+    if (!broadcast) return;
+
     let sent_by = null;
-    if (broadcast) {
-        userResponse = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${broadcast.sent_by}`)
-        if (userResponse) {
-            sent_by = userResponse && userResponse.data;
-        }
+    if (broadcast.sent_by) {
+        sent_by = await fetchData(`${process.env.API_GATEWAY_URL}/api/users/${broadcast.sent_by}`, res);
     }
-    if (broadcast) res.status(200).json({ ...broadcast._doc, sent_by });
+    res.status(200).json({ ...broadcast._doc, sent_by });
 };
 
 exports.createBroadcast = async (req, res) => {
@@ -68,8 +76,8 @@ exports.createBroadcast = async (req, res) => {
         const savedBroadcast = await newBroadcast.save();
         if (!savedBroadcast) throw Error('Something went wrong during creation!');
 
-        const { data: subscribers } = await axios.get(`${process.env.API_GATEWAY_URL}/api/subscribed-users`);
-        const { data: allUsers } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users`);
+        const subscribers = await fetchData(`${process.env.API_GATEWAY_URL}/api/subscribed-users`, res);
+        const allUsers = await fetchData(`${process.env.API_GATEWAY_URL}/api/users`, res);
 
         sendEmails(subscribers, title, message, clientURL);
         sendEmails(allUsers, title, message, clientURL);

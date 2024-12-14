@@ -7,8 +7,8 @@ const router = express.Router()
 
 // GET routes
 router.get("/", getImageUploads)
-router.get("/:id", getOneImageUpload)
 router.get("/image-owner/:id", getImageUploadsByOwner)
+router.get("/:id", getOneImageUpload)
 
 // POST routes
 router.post("/", authRole(['Creator', 'Admin', 'SuperAdmin']), imgUpload.single("uploadImage"), createImageUpload)

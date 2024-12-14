@@ -1,9 +1,7 @@
 const Course = require("../models/Course");
 const Chapter = require("../models/Chapter");
 const Notes = require("../models/Notes");
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find course by ID
 const findCourseById = async (id, res, selectFields = '') => {

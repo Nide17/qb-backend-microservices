@@ -1,10 +1,11 @@
 // Bring in Mongo
-const mongoose = require('mongoose')
+const mongoose = require('mongoose');
+const axios = require('axios');
 
-//Initialize Mongo schema
-const Schema = mongoose.Schema
+// Initialize Mongo schema
+const Schema = mongoose.Schema;
 
-//ImageUpload Schema
+// ImageUpload Schema
 const ImageUploadSchema = new Schema({
     imageTitle: {
         type: String,
@@ -14,17 +15,25 @@ const ImageUploadSchema = new Schema({
     owner: {
         type: Schema.Types.ObjectId
     }
-}, { timestamps: true, })
+}, { timestamps: true });
 
+// Method to populate owner details
 ImageUploadSchema.methods.populateOwner = async function () {
+    let upload = this;
+    let owner = null;
 
-    const axios = require('axios');
-    const upload = this;
-    const owner = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${upload.owner}`);
+    if (upload.owner) {
+        try {
+            const response = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${upload.owner}`);
+            owner = response.data;
+        } catch (error) {
+            console.error('Error fetching owner details:', error);
+        }
+    }
 
     upload = upload.toObject();
-    upload.owner = owner && { _id: owner._id, name: owner.name };
+    upload.owner = owner ? { _id: owner._id, name: owner.name } : null;
     return upload;
 };
 
-module.exports = mongoose.model("ImageUpload", ImageUploadSchema)
+module.exports = mongoose.model("ImageUpload", ImageUploadSchema);

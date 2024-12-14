@@ -1,5 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
+const axios = require('axios');
 
 // initialize Mongo schema 
 const Schema = mongoose.Schema
@@ -28,15 +29,20 @@ const BlogPostsViewSchema = new Schema({
 }, { timestamps: true, })
 
 BlogPostsViewSchema.methods.populateViewer = async function () {
+    let view = this;
+    let viewer = null;
 
-    const axios = require('axios');
-    const view = this;
-    const viewer = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${view.viewer}`);
+    if (view.viewer) {
+        try {
+            viewer = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${view.viewer}`);
+        } catch (error) {
+            viewer = null;
+        }
+    }
 
     view = view.toObject();
-    view.viewer = viewer && { _id: viewer._id, name: viewer.name };
+    view.viewer = viewer && viewer.data && { _id: viewer.data._id, name: viewer.data.name };
     return view;
 };
-
 
 module.exports = mongoose.model("BlogPostsView", BlogPostsViewSchema)

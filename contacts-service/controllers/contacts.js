@@ -1,11 +1,9 @@
+const axios = require('axios');
 const Contact = require("../models/Contact");
 const { sendEmail } = require("../utils/emails/sendEmail");
 const { convertFromRaw } = require("draft-js");
 const { stateToHTML } = require("draft-js-export-html");
-const axios = require('axios');
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find contact by ID
 const findContactById = async (id, res, selectFields = '') => {
@@ -20,16 +18,20 @@ const findContactById = async (id, res, selectFields = '') => {
 
 // Helper function to send emails to admins
 const notifyAdmins = async (newContact) => {
-    const { data: adminsEmails } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
-
-    adminsEmails.forEach(adm => {
-        sendEmail(
-            adm,
-            "A new message, someone contacted us!",
-            { cEmail: newContact.email },
-            "./template/contactAdmin.handlebars"
-        );
-    });
+    try {
+        const { data: adminsEmails } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
+        
+        adminsEmails.forEach(adm => {
+            sendEmail(
+                adm,
+                "A new message, someone contacted us!",
+                { cEmail: newContact.email },
+                "./template/contactAdmin.handlebars"
+            );
+        });
+    } catch (err) {
+        console.error('Error fetching admin emails:', err);
+    }
 };
 
 exports.getContacts = async (req, res) => {
@@ -43,8 +45,6 @@ exports.getContacts = async (req, res) => {
         const contacts = pageNo > 0 ?
             await Contact.find({}, {}, query).sort({ contact_date: -1 }) :
             await Contact.find().sort({ contact_date: -1 });
-
-        if (!contacts) throw Error('No contacts exist');
 
         if (pageNo > 0) {
             return res.status(200).json({
@@ -61,7 +61,7 @@ exports.getContacts = async (req, res) => {
 
 exports.getContactsBySender = async (req, res) => {
     try {
-        const contacts = await Contact.find({ sent_by: req.params.sender });
+        const contacts = await Contact.find({ sent_by: req.params.id });
         res.status(200).json(contacts);
     } catch (err) {
         handleError(res, err);

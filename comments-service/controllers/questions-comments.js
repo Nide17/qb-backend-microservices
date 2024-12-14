@@ -1,21 +1,24 @@
 const QuestionComment = require("../models/QuestionComment");
 const axios = require('axios');
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to populate sender and quiz fields
 const populateSenderAndQuiz = async (questionComment) => {
-    const sender = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${questionComment.sender}`);
-    const question = await axios.get(`${process.env.API_GATEWAY_URL}/api/questions/${questionComment.question}`);
-    const quiz = await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${questionComment.quiz}`);
+    try {
+        const sender = questionComment.sender ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${questionComment.sender}`) : null;
+        const question = questionComment.question ? await axios.get(`${process.env.API_GATEWAY_URL}/api/questions/${questionComment.question}`) : null;
+        const quiz = questionComment.quiz ? await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${questionComment.quiz}`) : null;
 
-    questionComment = questionComment.toObject();
-    questionComment.sender = sender.data;
-    questionComment.question = question.data;
-    questionComment.quiz = quiz.data;
+        questionComment = questionComment.toObject();
+        questionComment.sender = sender ? sender.data : null;
+        questionComment.question = question ? question.data : null;
+        questionComment.quiz = quiz ? quiz.data : null;
 
-    return questionComment;
+        return questionComment;
+    } catch (error) {
+        console.error('Error fetching sender and quiz:', error);
+        return questionComment;
+    }
 };
 
 // Helper function to find questionComment by ID

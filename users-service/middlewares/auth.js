@@ -9,6 +9,7 @@ const verifyToken = (req, res) => {
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     req.user = decoded
+    
     return decoded
   } catch (e) {
     res.status(400).json({ msg: 'Session Expired, login again!' })

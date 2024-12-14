@@ -26,47 +26,44 @@ const getDailyReport = async () => {
             { $project: { _id: 0, blogPost: '$blogPost.title', countries: 1, count: 1 } }
         ]);
 
-        let totalViewsCount = 0;
-        const uniqueCountries = new Set();
-        const uniqueCountriesCount = [];
-        const uniqueDevices = new Set();
-        const uniqueDevicesCount = [];
-        const blogPostsViews = [];
-
-        result.forEach(blogPost => {
-            totalViewsCount += blogPost.count;
-            blogPost.countries.forEach(country => {
-                if (!uniqueCountries.has(country.country)) {
-                    uniqueCountries.add(country.country);
-                    uniqueCountriesCount.push({ country: country.country, count: country.count });
-                } else {
-                    uniqueCountriesCount.find(uniqueCountry => uniqueCountry.country === country.country).count += country.count;
-                }
-                if (!uniqueDevices.has(country.device)) {
-                    uniqueDevices.add(country.device);
-                    uniqueDevicesCount.push({ device: country.device, count: country.count });
-                } else {
-                    uniqueDevicesCount.find(uniqueDevice => uniqueDevice.device === country.device).count += country.count;
-                }
-            });
-            blogPostsViews.push({ blogPost: blogPost.blogPost, count: blogPost.count });
-        });
-
-        return { totalViewsCount, uniqueCountriesCount, uniqueDevicesCount, blogPostsViews };
+        return processReportData(result);
     } catch (err) {
         console.error(err.message);
         return null;
     }
 }
 
-const scheduledReportMessage = async () => {
-    const report = await getDailyReport();
-    const { data: adminsEmails } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
+const processReportData = (result) => {
+    let totalViewsCount = 0;
+    const uniqueCountries = new Set();
+    const uniqueCountriesCount = [];
+    const uniqueDevices = new Set();
+    const uniqueDevicesCount = [];
+    const blogPostsViews = [];
 
-    const date = new Date();
-    const currentDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-    const scheduleDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+    result.forEach(blogPost => {
+        totalViewsCount += blogPost.count;
+        blogPost.countries.forEach(country => {
+            if (!uniqueCountries.has(country.country)) {
+                uniqueCountries.add(country.country);
+                uniqueCountriesCount.push({ country: country.country, count: country.count });
+            } else {
+                uniqueCountriesCount.find(uniqueCountry => uniqueCountry.country === country.country).count += country.count;
+            }
+            if (!uniqueDevices.has(country.device)) {
+                uniqueDevices.add(country.device);
+                uniqueDevicesCount.push({ device: country.device, count: country.count });
+            } else {
+                uniqueDevicesCount.find(uniqueDevice => uniqueDevice.device === country.device).count += country.count;
+            }
+        });
+        blogPostsViews.push({ blogPost: blogPost.blogPost, count: blogPost.count });
+    });
 
+    return { totalViewsCount, uniqueCountriesCount, uniqueDevicesCount, blogPostsViews };
+}
+
+const generateReportMessage = (report, currentDate) => {
     let reportMessage = `*TODAY, ${currentDate} REPORT FOR BLOG POSTS VIEWS* \n\n`
     reportMessage += `*Total Views:* ${report?.totalViewsCount} \n\n`
     reportMessage += `*Unique Countries:* \n`
@@ -76,7 +73,11 @@ const scheduledReportMessage = async () => {
     reportMessage += `\n*Blog Posts Views:* \n`
     report?.blogPostsViews.forEach(blogPost => reportMessage += `${blogPost.blogPost}: ${blogPost.count} \n`);
 
-    let reportMessageEmail = {
+    return reportMessage;
+}
+
+const generateReportEmail = (report, currentDate) => {
+    return {
         subject: `TODAY, ${currentDate} REPORT BLOG POSTS VIEWS`,
         html: `
             <h3 style="color: blue"><u>Report for ${currentDate}</u></h3>
@@ -89,17 +90,43 @@ const scheduledReportMessage = async () => {
             <ul>${report?.blogPostsViews.map(blogPost => `<li>${blogPost.blogPost}: ${blogPost.count}</li>`).join('')}</ul>
         `
     }
+}
 
-    const interval = setInterval(() => {
+const sendReport = async (reportMessage, reportMessageEmail, adminsEmails) => {
+    numbers.forEach(to => {
+        client.messages.create({ from, to, body: reportMessage })
+            .then(message => console.log(message.sid))
+            .catch(error => console.error(error));
+    });
+    adminsEmails && adminsEmails.forEach(admEmail => SendHtmlEmail(admEmail, reportMessageEmail.subject, reportMessageEmail.html));
+}
+
+const fetchAdminEmails = async () => {
+    try {
+        const { data } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
+        return data;
+    } catch (error) {
+        console.error('Error fetching admin emails:', error.message);
+        return [];
+    }
+}
+
+const scheduledReportMessage = async () => {
+    const report = await getDailyReport();
+    const adminsEmails = await fetchAdminEmails();
+
+    const date = new Date();
+    const currentDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+    const scheduleDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+
+    const reportMessage = generateReportMessage(report, currentDate);
+    const reportMessageEmail = generateReportEmail(report, currentDate);
+
+    const interval = setInterval(async () => {
         const now = new Date();
         if (now >= scheduleDate) {
             console.log('Sending report...');
-            numbers.forEach(to => {
-                client.messages.create({ from, to, body: reportMessage })
-                    .then(message => console.log(message.sid))
-                    .catch(error => console.error(error));
-            });
-            adminsEmails.forEach(admEmail => SendHtmlEmail(admEmail, reportMessageEmail.subject, reportMessageEmail.html));
+            await sendReport(reportMessage, reportMessageEmail, adminsEmails);
             clearInterval(interval);
         }
     }, 1000);

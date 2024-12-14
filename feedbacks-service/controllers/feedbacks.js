@@ -1,7 +1,5 @@
 const Feedback = require("../models/Feedback");
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find feedback by ID
 const findFeedbackById = async (id, res, selectFields = '') => {
@@ -24,6 +22,7 @@ const getPagination = (pageNo, pageSize) => {
 };
 
 exports.getFeedbacks = async (req, res) => {
+
     const totalPages = await Feedback.countDocuments({});
     const PAGE_SIZE = 20;
     const pageNo = parseInt(req.query.pageNo || "0");
@@ -33,6 +32,7 @@ exports.getFeedbacks = async (req, res) => {
         const feedbacks = pageNo > 0 ?
             await Feedback.find({}, {}, query).sort({ createdAt: -1 }).exec() :
             await Feedback.find().sort({ createdAt: -1 }).exec();
+            // console.log(feedbacks);
 
         if (!feedbacks) throw Error('No feedbacks exist');
 

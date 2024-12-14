@@ -47,13 +47,20 @@ CategorySchema.pre("validate", function (next) {
 })
 
 CategorySchema.methods.populateCourseCategory = async function () {
-
   const axios = require('axios');
   let category = this;
-  const courseCategory = await axios.get(`${process.env.API_GATEWAY_URL}/api/course-categories/${category.courseCategory}`);
+  let courseCategory = null;
+
+  if (category.courseCategory) {
+    try {
+      courseCategory = await axios.get(`${process.env.API_GATEWAY_URL}/api/course-categories/${category.courseCategory}`);
+    } catch (error) {
+      courseCategory = null;
+    }
+  }
 
   category = category.toObject();
-  category.courseCategory = courseCategory && { _id: courseCategory._id, title: courseCategory.title };
+  category.courseCategory = courseCategory && courseCategory.data && { _id: courseCategory.data._id, title: courseCategory.data.title };
   return category;
 };
 

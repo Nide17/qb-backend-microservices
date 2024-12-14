@@ -14,23 +14,22 @@ const allowList = [
     'http://localhost:5173',
     'http://localhost:4000',
     'http://localhost:5008',
-]
+];
 
 const corsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowList.includes(origin)) {
-            callback(null, true)
+            callback(null, true);
         } else {
-            callback(null, true) // all allowed
-            console.log(origin + ' is not allowed by CORS')
-            // callback(new Error('Not allowed by CORS'))
+            console.log(origin + ' is not allowed by CORS');
+            callback(new Error('Not allowed by CORS'));
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     preflightContinue: false,
     optionsSuccessStatus: 200,
     maxAge: 3600
-}
+};
 
 // Middlewares
 app.use(cors(corsOptions))

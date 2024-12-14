@@ -1,9 +1,7 @@
+const axios = require('axios');
 const ChatRoom = require("../models/ChatRoom");
 const RoomMessage = require("../models/RoomMessage");
-const axios = require('axios');
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to find chatRoom by ID
 const findChatRoomById = async (id, res, selectFields = '') => {
@@ -34,13 +32,14 @@ const populateUsersInChatRooms = async (chatRooms) => {
     try {
         // for each user, get user details
         uniqueUserIds.forEach(async (userId) => {
-            usrResp = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${userId}`);
+            usrResp = userId ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${userId}`) : null;
 
             // combine each user details in usersResponse
             usersResponse = [...usersResponse, usrResp.data];
             });
     } catch (err) {
-        throw new Error('Failed to get users');
+        console.error('Error fetching user data:', err);
+        usersResponse = [];
     }
     
     const usersMap = usersResponse.reduce((acc, user) => {

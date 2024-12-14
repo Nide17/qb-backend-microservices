@@ -1,25 +1,27 @@
-const Download = require("../models/Download");
 const axios = require('axios');
+const Download = require("../models/Download");
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
-
-// Helper function to handle errors
-const handleError = (res, err, status = 400) => res.status(status).json({ msg: err.message });
+const { handleError } = require('../utils/error');
 
 // Helper function to fetch related data for a download
 const fetchDownloadDetails = async (download) => {
+    try {
+        const notes = download.notes && await axios.get(`${API_GATEWAY_URL}/api/notes/${download.notes}`);
+        const course = download.course && await axios.get(`${API_GATEWAY_URL}/api/courses/${download.course}`);
+        const chapter = download.chapter && await axios.get(`${API_GATEWAY_URL}/api/chapters/${download.chapter}`);
+        const user = download.downloaded_by && await axios.get(`${API_GATEWAY_URL}/api/users/${download.downloaded_by}`);
 
-    const notes = await axios.get(`${API_GATEWAY_URL}/api/notes/${download.notes}`);
-    const course = await axios.get(`${API_GATEWAY_URL}/api/courses/${download.course}`);
-    const chapter = await axios.get(`${API_GATEWAY_URL}/api/chapters/${download.chapter}`);
-    const user = await axios.get(`${API_GATEWAY_URL}/api/users/${download.downloaded_by}`);
-
-    return {
-        ...download.toObject(),
-        notes: notes.data,
-        course: course.data,
-        chapter: chapter.data,
-        downloaded_by: user.data
-    };
+        return {
+            ...download.toObject(),
+            notes: notes.data,
+            course: course.data,
+            chapter: chapter.data,
+            downloaded_by: user.data
+        };
+    } catch (error) {
+        console.error('Error fetching download details:', error);
+        return download;
+    }
 };
 
 exports.getDownloads = async (req, res) => {
