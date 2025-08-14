@@ -53,3 +53,4 @@ dump/
 
 # Documentation files
 doc/
+node_modules

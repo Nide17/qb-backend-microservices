@@ -1,0 +1,30 @@
+{
+    "name": "shared-utils",
+    "version": "1.0.0",
+    "description": "Shared utilities for QB microservices",
+    "main": "index.js",
+    "scripts": {
+        "test": "echo \"Error: no test specified\" && exit 1"
+    },
+    "keywords": [
+        "microservices",
+        "utilities",
+        "database",
+        "response"
+    ],
+    "author": "Niyomwungeri Parmenide Ishimwe",
+    "license": "MIT",
+    "dependencies": {
+        "mongoose": "^8.8.2",
+        "axios": "^1.7.7",
+        "cors": "^2.8.5",
+        "dotenv": "^16.4.5",
+        "express": "^4.21.1",
+        "jsonwebtoken": "^9.0.2",
+        "winston": "^3.11.0",
+        "joi": "^17.11.0"
+    },
+    "peerDependencies": {
+        "mongoose": "^8.8.2"
+    }
+}
