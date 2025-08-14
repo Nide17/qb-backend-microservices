@@ -1,8 +1,8 @@
 const axios = require('axios')
 const { SendHtmlEmail } = require("../../utils/sendEmail")
-const twilioSID = process.env.TWILIO_ACCOUNT_SID
-const twilioToken = process.env.TWILIO_AUTH_TOKEN
-const client = require('twilio')(twilioSID, twilioToken)
+// const twilioSID = process.env.TWILIO_ACCOUNT_SID
+// const twilioToken = process.env.TWILIO_AUTH_TOKEN
+// const client = require('twilio')(twilioSID, twilioToken)
 
 // BlogPostsView Model
 const BlogPostsView = require('../../models/blog-posts/BlogPostsView')
@@ -28,7 +28,7 @@ const getDailyReport = async () => {
 
         return processReportData(result);
     } catch (err) {
-        console.error(err.message);
+        console.error(err);
         return null;
     }
 }
@@ -93,11 +93,11 @@ const generateReportEmail = (report, currentDate) => {
 }
 
 const sendReport = async (reportMessage, reportMessageEmail, adminsEmails) => {
-    numbers.forEach(to => {
-        client.messages.create({ from, to, body: reportMessage })
-            .then(message => console.log(message.sid))
-            .catch(error => console.error(error));
-    });
+    // numbers.forEach(to => {
+    //     client.messages.create({ from, to, body: reportMessage })
+    //         .then(message => console.log(message.sid))
+    //         .catch(error => console.error(error));
+    // });
     adminsEmails && adminsEmails.forEach(admEmail => SendHtmlEmail(admEmail, reportMessageEmail.subject, reportMessageEmail.html));
 }
 

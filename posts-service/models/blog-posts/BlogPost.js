@@ -52,6 +52,7 @@ BlogPostSchema.methods.populateCreator = async function () {
         try {
             creator = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${blogPost.creator}`);
         } catch (error) {
+            console.error('Error fetching creator:', error.message);
             creator = null;
         }
     }

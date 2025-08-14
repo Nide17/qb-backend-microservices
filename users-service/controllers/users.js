@@ -1,3 +1,4 @@
+// Import dependencies
 const bcrypt = require("bcryptjs")
 const jwt = require("jsonwebtoken")
 const crypto = require("crypto")
@@ -7,6 +8,7 @@ const User = require("../models/User")
 const PswdResetToken = require("../models/PswdResetToken")
 const { handleError } = require("../utils/error")
 
+// Configure S3
 const s3Config = new S3({
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
@@ -14,61 +16,144 @@ const s3Config = new S3({
     region: process.env.AWS_REGION,
 })
 
-// Helper function to find user by ID
-const findUserById = async (id, res, selectFields = '') => {
-    try {
-        let user = await User.findById(id).select(selectFields)
+// Helper functions
+const generateToken = (user) => {
+    return jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '2h' })
+}
 
+const updateUserToken = async (user, token) => {
+    return await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
+}
+
+const sendOtpEmail = async (user, otp) => {
+    await sendEmail(user.email,
+        "One Time Password (OTP) verification for Quiz Blog account",
+        { name: user.name, otp }, "./template/otp.handlebars")
+}
+
+const hashPassword = async (password) => {
+    const salt = await bcrypt.genSalt(10)
+    if (!salt) throw Error('Something went wrong with bcrypt')
+    const hash = await bcrypt.hash(password, salt)
+    if (!hash) throw Error('Something went wrong hashing the password')
+    return hash
+}
+
+// Get all users
+exports.getUsers = async (req, res) => {
+    try {
+        let users = await User.find().sort({ register_date: -1 })
+        if (!users.length) return res.status(404).json({ msg: 'No users found!' })
+        // users = await Promise.all(users.map(async (user) => await user.populateSchoolData()));
+        res.status(200).json(users)
+    } catch (err) {
+        handleError(res, err)
+    }
+}
+
+// Get 8 latest users
+exports.getLatestUsers = async (req, res) => {
+    try {
+        let users = await User.find().sort({ register_date: -1 }).limit(8)
+        if (!users.length) return res.status(404).json({ msg: 'No users found!' })
+        users = await Promise.all(users.map(async (user) => await user.populateSchoolData()));
+        res.status(200).json(users)
+    } catch (err) {
+        handleError(res, err)
+    }
+}
+
+// Get Admin and Creators users
+exports.getAdminsCreators = async (req, res) => {
+    try {
+        const users = await User.find({ role: { $in: ['Admin', 'SuperAdmin', 'Creator'] } })
+        if (!users.length) return res.status(404).json({ msg: 'No users found!' })
+        const adminsCreators = await Promise.all(users.map(async (user) => await user.populateSchoolData()));
+        res.status(200).json(adminsCreators)
+    } catch (err) {
+        handleError(res, err)
+    }
+}
+
+// Get one user by ID
+exports.getOneUser = async (req, res) => {
+    try {
+        let user = await User.findById(req.params.id).select('name email')
         if (!user) return res.status(404).json({ msg: 'No user found!' })
         user = await user.populateSchoolData()
-
-        res.status(200).json(user)
-
+        return res.status(200).json(user)
     } catch (err) {
         return handleError(res, err)
     }
 }
 
-// Helper function to generate JWT token
-const generateToken = (user) => {
-    return jwt.sign({ _id: user._id, role: user.role }, process.env.JWT_SECRET, { expiresIn: '2h' })
-}
-
-// Helper function to update user token
-const updateUserToken = async (user, token) => {
-    return await User.findByIdAndUpdate({ _id: user._id }, { $set: { current_token: token } }, { new: true })
-}
-
-exports.getUsers = async (req, res) => {
+// Load user by token
+exports.loadUser = async (req, res) => {
+    const id = req.user && req.user._id
+    if (!id) return res.status(400).json({ msg: 'No token, authorization Denied' })
     try {
-        let users = await User.find().sort({ createdAt: -1 }).lean()
-        if (!users.length) return res.status(404).json({ msg: 'No users found!' })
-
-        users = await Promise.all(users.map(async (usr) => {
-            const userInstance = new User(usr);
-            return await userInstance.populateSchoolData();
-        }))
-        res.status(200).json(users);
-
+        let user = await User.findById(id).select('-password -__v')
+        if (!user) return res.status(204).json({ msg: 'No active session!' })
+        user = await user.populateSchoolData()
+        return res.status(200).json(user)
     } catch (err) {
         handleError(res, err)
     }
 }
 
-exports.getOneUser = async (req, res) => await findUserById(req.params.id, res, 'name email')
-exports.loadUser = async (req, res) => await findUserById(req.user._id, res, '-password -__v')
-
+// Get emails of all admins
 exports.getAdminsEmails = async (req, res) => {
     try {
         const admins = await User.find({ role: { $in: ['Admin', 'SuperAdmin'] } }).select('email')
         if (!admins) return res.status(404).json({ msg: 'No admins found!' })
         const adminEmails = admins.map(admin => admin.email)
-        res.status(200).json(adminEmails)
+        return res.status(200).json(adminEmails)
     } catch (err) {
         handleError(res, err)
     }
 }
 
+// Get daily user registration statistics
+exports.getDailyUserRegistration = async (req, res) => {
+    try {
+        const usersStats = await User.aggregate([
+            {
+                $project: {
+                    register_date_CAT: {
+                        $dateToString: {
+                            format: "%Y-%m-%d",
+                            date: { $add: ["$register_date", 2 * 60 * 60 * 1000] }
+                        }
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: "$register_date_CAT",
+                    users: { $sum: 1 }
+                }
+            },
+            {
+                $sort: { _id: 1 }
+            },
+            {
+                $project: {
+                    _id: 0,
+                    date: "$_id",
+                    users: 1
+                }
+            }
+        ]).exec()
+
+        const total = usersStats.reduce((acc, user) => acc + user.users, 0)
+
+        res.status(200).json({ usersStats, total })
+    } catch (err) {
+        handleError(res, err)
+    }
+}
+
+// User login
 exports.login = async (req, res) => {
     const { email, password, confirmLogin } = req.body
     if (!email || !password) return res.status(400).json({ msg: 'Please fill all fields' })
@@ -80,14 +165,10 @@ exports.login = async (req, res) => {
         const isMatch = await bcrypt.compare(password, user.password)
         if (!isMatch) throw Error('Incorrect E-mail or Password!')
 
-        // user.register_date < 1 december 2024
         if (!user.verified && new Date(user.register_date) > new Date('2024-12-09')) {
             const otp = Math.floor(100000 + Math.random() * 900000).toString()
             await User.findOneAndUpdate({ email }, { otp })
-            
-            await sendEmail(user.email,
-                "One Time Password (OTP) verification for Quiz Blog account",
-                { name: user.name, otp }, "./template/otp.handlebars")
+            await sendOtpEmail(user, otp)
             return res.status(400).json({ msg: 'Account not verified yet, check your email for OTP!' })
         }
 
@@ -111,8 +192,8 @@ exports.login = async (req, res) => {
             } else {
                 if (!confirmLogin) {
                     return res.status(401).json({
-                        msg: 'You are already logged in from another device or browser. Do you want to log them out to use here?',
-                        status: 401
+                        msg: 'Already logged in, Log out & use here',
+                        id: 'CONFIRM_ERR'
                     })
                 } else {
                     const token1 = generateToken(user)
@@ -138,22 +219,23 @@ exports.login = async (req, res) => {
     }
 }
 
+// User logout
 exports.logout = async (req, res) => {
     try {
         const loggedOutUser = await User.findByIdAndUpdate(
-            { _id: req.body.userId },
+            req.body.userId,
             { $set: { current_token: null } },
             { new: true }
         )
-        if (!loggedOutUser) throw Error('Something went wrong updating current token date')
+        if (!loggedOutUser) return res.status(404).json({ msg: 'User not found!' })
         res.status(200).json({ msg: 'Good Bye!', status: 200 })
     } catch (err) {
         handleError(res, err)
     }
 }
 
+// User registration
 exports.register = async (req, res) => {
-
     const { name, email, password } = req.body
     const emailTest = /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,4}$/i
     const otp = Math.floor(100000 + Math.random() * 900000).toString()
@@ -163,32 +245,20 @@ exports.register = async (req, res) => {
 
     try {
         const user = await User.findOne({ email })
+        const hash = await hashPassword(password)
 
         if (user && (user.verified || user.verified === undefined || user.verified === null)) {
             return res.status(400).json({ msg: 'User already exists, login instead!' })
         }
 
-
-        const salt = await bcrypt.genSalt(10)
-        if (!salt) throw Error('Something went wrong with bcrypt')
-
-        const hash = await bcrypt.hash(password, salt)
-        if (!hash) throw Error('Something went wrong hashing the password')
-
         if (user && user.verified === false) {
             await User.findOneAndUpdate({ email }, { name, password: hash, otp })
-            console.log("Existing: ", email, otp)
-            await sendEmail(user.email,
-                "One Time Password (OTP) verification for Quiz Blog account",
-                { name: user.name, otp }, "./template/otp.handlebars")
+            await sendOtpEmail(user, otp)
         } else {
             const newUser = new User({ name, email, password: hash, otp, verified: false })
             const savedUser = await newUser.save()
             if (!savedUser) throw Error('Something went wrong saving the user')
-            console.log(email, otp)
-            await sendEmail(savedUser.email,
-                "One Time Password (OTP) verification for Quiz Blog account",
-                { name: savedUser.name, otp }, "./template/otp.handlebars")
+            await sendOtpEmail(savedUser, otp)
         }
 
         res.status(200).json({ msg: 'Registration successful! Please verify your email to login.', email })
@@ -197,6 +267,7 @@ exports.register = async (req, res) => {
     }
 }
 
+// Verify OTP
 exports.verifyOTP = async (req, res) => {
     const { email, otp } = req.body
     if (!email || !otp) return res.status(400).json({ msg: "Email and OTP required!" })
@@ -227,6 +298,7 @@ exports.verifyOTP = async (req, res) => {
     }
 }
 
+// Send password reset link
 exports.sendResetLink = async (req, res) => {
     const email = req.body.email
     try {
@@ -237,14 +309,11 @@ exports.sendResetLink = async (req, res) => {
         if (token) await token.deleteOne()
 
         let resetToken = crypto.randomBytes(32).toString("hex")
-        const salt = await bcrypt.genSalt(10)
-        if (!salt) throw Error('Something went wrong with bcrypt')
-
-        const hash = await bcrypt.hash(resetToken, salt)
+        const hash = await hashPassword(resetToken)
         await new PswdResetToken({
             userId: userToReset._id,
             token: hash,
-            createdAt: Date.now(),
+            register_date: Date.now(),
         }).save()
 
         const clientURL = req.headers.origin
@@ -266,6 +335,7 @@ exports.sendResetLink = async (req, res) => {
     }
 }
 
+// Send new password
 exports.sendNewPassword = async (req, res) => {
     try {
         const { userId, token, password } = req.body
@@ -275,22 +345,16 @@ exports.sendNewPassword = async (req, res) => {
         const isValid = await bcrypt.compare(token, passwordResetToken.token)
         if (!isValid) throw Error("Invalid link, try resetting again!")
 
-        const salt = await bcrypt.genSalt(10)
-        if (!salt) throw Error('Something went wrong with bcrypt')
-
-        const hash = await bcrypt.hash(password, salt)
+        const hash = await hashPassword(password)
         await User.updateOne({ _id: userId }, { $set: { password: hash } }, { new: true })
 
         const resetUser = await User.findById({ _id: userId })
-        console.log(resetUser)
-
         sendEmail(
             resetUser.email,
             "Password reset for your Quiz-Blog account is successful!",
-            {
-                name: resetUser.name,
-            },
-            "./template/resetPassword.handlebars")
+            { name: resetUser.name },
+            "./template/resetPassword.handlebars"
+        )
 
         await passwordResetToken.deleteOne()
         res.status(200).json({ msg: "Password reset successful!", status: 200 })
@@ -299,6 +363,7 @@ exports.sendNewPassword = async (req, res) => {
     }
 }
 
+// Update profile image
 exports.updateProfileImage = async (req, res) => {
     if (!req.file) throw Error('FILE_MISSING')
 
@@ -325,6 +390,7 @@ exports.updateProfileImage = async (req, res) => {
     }
 }
 
+// Update profile
 exports.updateProfile = async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate({ _id: req.params.id }, req.body, { new: true })
@@ -334,6 +400,7 @@ exports.updateProfile = async (req, res) => {
     }
 }
 
+// Update user
 exports.updateUser = async (req, res) => {
     try {
         const user = await User.findByIdAndUpdate({ _id: req.params.id }, req.body, { new: true })
@@ -343,6 +410,7 @@ exports.updateUser = async (req, res) => {
     }
 }
 
+// Delete user
 exports.deleteUser = async (req, res) => {
     try {
         const user = await User.findById(req.params.id)

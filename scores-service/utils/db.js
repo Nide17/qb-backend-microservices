@@ -22,7 +22,7 @@ function makeNewConnection(uri) {
 const dbScores = makeNewConnection(process.env.MONGODB_URI);
 
 dbScores.once('open', () => {
-    console.log('dbScores connection established:', dbScores.name);
+    console.log('MongoDB is connected at', dbScores.name);
 });
 
 module.exports = dbScores;

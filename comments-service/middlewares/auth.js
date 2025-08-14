@@ -28,7 +28,7 @@ const authRole = (roles) => (req, res, next) => {
   if (!decoded) return
 
   if (!req.user) {
-    return res.status(401).json({ message: 'Session expired' })
+    return res.status(401).json({ msg: 'Session expired' })
   }
 
   const allowedUser = roles.find(rol => rol === req.user.role)

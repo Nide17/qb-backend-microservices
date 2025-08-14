@@ -8,7 +8,7 @@ const router = express.Router()
 // GET routes
 router.get("/", getBlogPosts)
 router.get("/post-category/:id", getBlogPostsByCategory)
-router.get("/:id", getOneBlogPost)
+router.get("/:id", getOneBlogPost)  // Combine slug and id into one route
 
 // POST routes
 router.post("/", authRole(['Creator', 'Admin', 'SuperAdmin']), blogPostUpload.single("post_image"), createBlogPost)

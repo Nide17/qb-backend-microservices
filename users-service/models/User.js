@@ -1,5 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
+const axios = require('axios');
 
 // Initialize Mongo schema
 const Schema = mongoose.Schema
@@ -66,25 +67,38 @@ const UserSchema = new Schema({
     type: Boolean,
     default: false
   },
-}, { timestamps: true })
+  register_date: {
+    type: Date,
+    default: Date.now
+  }
+})
 
 UserSchema.methods.populateSchoolData = async function () {
+
   let user = this;
-  const axios = require('axios');
 
   try {
     const [schl, level, faculty] = await Promise.all([
-      user.school ? axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`).catch(() => null) : null,
-      user.level ? axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`).catch(() => null) : null,
-      user.faculty ? axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`).catch(() => null) : null
+      user.school ? axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`) : null,
+      user.level ? axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`) : null,
+      user.faculty ? axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`) : null
     ]);
 
     user = user.toObject();
     user.school = schl ? { _id: schl.data._id, title: schl.data.title } : null;
     user.level = level ? { _id: level.data._id, title: level.data.title } : null;
     user.faculty = faculty ? { _id: faculty.data._id, title: faculty.data.title } : null;
+
+    return user;
+    
   } catch (error) {
     console.error('Error populating school data:', error);
+    user = user.toObject();
+    user.school = user.school ? { _id: user.school } : null;
+    user.level = user.level ? { _id: user.level } : null;
+    user.faculty = user.faculty ? { _id: user.faculty } : null;
+
+    return user;
   }
 
   return user;

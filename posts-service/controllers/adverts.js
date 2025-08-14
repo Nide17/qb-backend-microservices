@@ -124,7 +124,7 @@ exports.updateAdvertStatus = async (req, res) => {
         if (!advert) return res.status(404).json({ msg: 'Advert not found!' });
 
         const updatedAdvert = await Advert.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
-        res.status(200).json(updatedAdvert);
+        res.status(200).json({ advert: updatedAdvert, msg: 'Updated successfully!' });
     } catch (error) {
         handleError(res, error);
     }

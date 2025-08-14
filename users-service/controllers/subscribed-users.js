@@ -1,5 +1,6 @@
 const SubscribedUser = require("../models/SubscribedUser");
 const { handleError } = require('../utils/error');
+const { sendEmail } = require("../utils/emails/sendEmail")
 
 // Helper function to find subscribedUser by ID
 const findSubscribedUserById = async (id, res, selectFields = '') => {
@@ -20,6 +21,22 @@ const validateRequestBody = (body, requiredFields) => {
         }
     }
     return null;
+};
+
+// Helper function to send subscription email
+const sendSubscriptionEmail = (subscriber) => {
+    const clientURL = process.env.NODE_ENV === 'production' ?
+        'https://quizblog.rw' : 'http://localhost:5173';
+
+    sendEmail(
+        subscriber.email,
+        "Thank you for subscribing to Quiz-Blog!",
+        {
+            name: subscriber.name,
+            unsubscribeLink: `${clientURL}/unsubscribe`
+        },
+        "./template/subscribe.handlebars"
+    );
 };
 
 exports.getSubscribedUsers = async (req, res) => {
@@ -58,18 +75,7 @@ exports.createSubscribedUser = async (req, res) => {
         }
 
         // Sending e-mail to subscribed user
-        const clientURL = process.env.NODE_ENV === 'production' ?
-            'https://quizblog.rw' : 'http://localhost:5173';
-
-        sendEmail(
-            savedSubscriber.email,
-            "Thank you for subscribing to Quiz-Blog!",
-            {
-                name: savedSubscriber.name,
-                unsubscribeLink: `${clientURL}/unsubscribe`
-            },
-            "./template/subscribe.handlebars"
-        );
+        sendSubscriptionEmail(savedSubscriber);
 
         res.status(200).json(savedSubscriber);
     } catch (err) {

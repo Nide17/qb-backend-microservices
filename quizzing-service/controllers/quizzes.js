@@ -6,9 +6,12 @@ const { handleError } = require('../utils/error');
 
 // Helper function to find quiz by ID
 const findQuizById = async (id, res, selectFields = '') => {
+
     if (!isValidObjectId(id)) {
+        console.log('\n\nInvalid quiz ID');
         return res.status(400).json({ msg: 'Invalid quiz ID' });
     }
+
     try {
         let quiz = await Quiz.findById(id).select(selectFields)
             .populate('category questions');
@@ -17,14 +20,17 @@ const findQuizById = async (id, res, selectFields = '') => {
 
         quiz = await quiz.populateCreatedBy();
 
+        console.log('\n\nQuiz found:', quiz);
         return quiz;
     } catch (err) {
+        console.log('\n\nError finding quiz:', err.message);
         return handleError(res, err);
     }
 };
 
 // Helper function to get quizzes with pagination
 const getQuizzesWithPagination = async (query, pageNo, pageSize, res) => {
+
     const skip = pageSize * (pageNo - 1);
     try {
         const totalQuizzes = await Quiz.countDocuments(query);
@@ -53,7 +59,7 @@ const populateQuizzes = async (quizzes) => {
 };
 
 exports.getQuizzes = async (req, res) => {
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = parseInt(req.query.limit);
     const skip = parseInt(req.query.skip) || 0;
 
     try {
@@ -64,8 +70,6 @@ exports.getQuizzes = async (req, res) => {
             .skip(skip);
 
         if (!quizzes.length) throw new Error('No quizzes found');
-
-        quizzes = await populateQuizzes(quizzes);
         res.status(200).json(quizzes);
     } catch (err) {
         handleError(res, err);
@@ -74,7 +78,7 @@ exports.getQuizzes = async (req, res) => {
 
 exports.getPaginatedQuizzes = async (req, res) => {
     const PAGE_SIZE = 12;
-    const pageNo = parseInt(req.query.pageNo || "0");
+    const pageNo = parseInt(req.query.pageNo || "1");
 
     const query = req.user && req.user.role === 'Creator'
         ? { created_by: req.user._id }

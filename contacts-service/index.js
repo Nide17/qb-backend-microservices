@@ -1,8 +1,10 @@
+
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
-const { createServer } = require("http");
+const { createServer } = require("http")
 const dotenv = require('dotenv')
+const { initialize } = require('./utils/socket')
 
 // Config
 dotenv.config()
@@ -45,11 +47,16 @@ app.use("/api/room-messages", require('./routes/room-messages'))
 // home route
 app.get('/', (req, res) => { res.send('Welcome to QB contacts API') })
 
+// Database connection and server start
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
         httpServer.listen(process.env.PORT || 5008, () => {
             console.log(`Contacts service is running on port ${process.env.PORT || 5008}, and MongoDB is connected`)
+            initialize(httpServer)  // Initializing Socket.io after server starts
         })
     })
-    .catch((err) => console.log(err))
+    .catch((err) => {
+        console.error('Failed to connect to MongoDB', err)
+        process.exit(1)
+    })

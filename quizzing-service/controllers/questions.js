@@ -49,7 +49,7 @@ const updateQuizQuestions = async (quizId, questionId, action) => {
 };
 
 exports.getQuestions = async (req, res) => {
-    console.log('getQuestions');
+    
     try {
         const questions = await Question.find().sort({ createdAt: -1 }).populate('category quiz');
         if (!questions) return res.status(404).json({ msg: 'No questions found!' });

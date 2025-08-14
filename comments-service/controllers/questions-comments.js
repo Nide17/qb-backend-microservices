@@ -51,7 +51,7 @@ const updateQuestionCommentStatus = async (id, status, res) => {
 exports.getQuestionsComments = async (req, res) => {
     try {
         let questionComments = await QuestionComment.find();
-        
+
         for (let i = 0; i < questionComments.length; i++) {
             questionComments[i] = await populateSenderAndQuiz(questionComments[i]);
         }
@@ -121,7 +121,7 @@ exports.getOneQuestionComment = async (req, res) => {
 exports.getCommentsByQuiz = async (req, res) => {
     try {
         let questionComments = await QuestionComment.find({ quiz: req.params.quizId });
-        
+
         for (let i = 0; i < questionComments.length; i++) {
             questionComments[i] = await populateSenderAndQuiz(questionComments[i]);
         }

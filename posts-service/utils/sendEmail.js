@@ -33,27 +33,37 @@ const sendActualMail = async (transporter, mailOptions, retries) => {
 };
 
 const sendEmail = async (email, subject, payload, template, retries = 3) => {
-  const transporter = createTransporter();
-  const source = fs.readFileSync(path.join(__dirname, template), "utf8");
-  const compiledTemplate = handlebars.compile(source);
-  const mailOptions = {
-    from: '"quizblog.rw(Quiz-Blog)" <quizblog.rw@gmail.com>',
-    to: email,
-    subject: subject,
-    html: compiledTemplate(payload),
-  };
-  return sendActualMail(transporter, mailOptions, retries);
+  try {
+    const transporter = createTransporter();
+    const source = fs.readFileSync(path.join(__dirname, template), "utf8");
+    const compiledTemplate = handlebars.compile(source);
+    const mailOptions = {
+      from: '"quizblog.rw(Quiz-Blog)" <quizblog.rw@gmail.com>',
+      to: email,
+      subject: subject,
+      html: compiledTemplate(payload),
+    };
+    return await sendActualMail(transporter, mailOptions, retries);
+  } catch (error) {
+    console.error(`Failed to send email: ${error.message}`);
+    return error.message;
+  }
 };
 
 const sendHtmlEmail = async (email, subject, html, retries = 3) => {
-  const transporter = createTransporter();
-  const mailOptions = {
-    from: '"quizblog.rw(Quiz-Blog)" <quizblog.rw@gmail.com>',
-    to: email,
-    subject: subject,
-    html: html,
-  };
-  return sendActualMail(transporter, mailOptions, retries);
+  try {
+    const transporter = createTransporter();
+    const mailOptions = {
+      from: '"quizblog.rw(Quiz-Blog)" <quizblog.rw@gmail.com>',
+      to: email,
+      subject: subject,
+      html: html,
+    };
+    return await sendActualMail(transporter, mailOptions, retries);
+  } catch (error) {
+    console.error(`Failed to send HTML email: ${error.message}`);
+    return error.message;
+  }
 };
 
 module.exports = { sendEmail, sendHtmlEmail };

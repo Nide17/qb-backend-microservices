@@ -241,8 +241,9 @@ exports.getNotesCategoriesStats = async (req, res) => {
 };
 
 exports.getDailyUserRegistration = async (req, res) => {
+
     try {
-        const response = await axios.get(`${API_GATEWAY_URL}/api/users/dailyRegistration`);
+        const response = await axios.get(`${API_GATEWAY_URL}/api/users/daily-user-registration`);
         const usersStats = response.data;
 
         res.json(usersStats);

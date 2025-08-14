@@ -62,8 +62,10 @@ exports.initialize = (httpServer) => {
         });
 
         socket.on('disconnect', (reason) => {
-            console.log('A client disconnected with id = ', socket.id, " reason ==> ", reason)
-        })
+            console.log('A client disconnected with id = ', socket.id, " reason ==> ", reason);
+            onlineUsers = onlineUsers.filter(user => user.socketID !== socket.id);
+            io.emit('userDisconnected', { socketID: socket.id, onlineUsers });
+        });
     })
     return io;
 }

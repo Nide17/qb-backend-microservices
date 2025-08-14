@@ -182,7 +182,6 @@ exports.deleteNotes = async (req, res) => {
         const downloadServiceUrl = `${process.env.DOWNLOADS_SERVICE_URL}/api/downloads/by-notes/${notes._id}`;
         const response = await axios.delete(downloadServiceUrl);
         if (response.status !== 200) throw Error('Something went wrong while deleting the downloads!');
-        console.log(response.data);
 
         const removedNotes = await Notes.deleteOne({ _id: req.params.id });
         if (!removedNotes) throw Error('Something went wrong while deleting!');

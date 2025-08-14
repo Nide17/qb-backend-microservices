@@ -45,6 +45,9 @@ FeedbackSchema.methods.populateDetails = async function () {
     return feedback;
   } catch (error) {
     console.error('Error populating feedback details:', error);
+    feedback = feedback.toObject();
+    feedback.quiz = feedback.quiz ? { _id: feedback.quiz } : null;
+    feedback.score = feedback.score ? { _id: feedback.score } : null;
     return feedback;
   }
 };

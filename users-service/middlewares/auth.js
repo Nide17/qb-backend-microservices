@@ -1,18 +1,25 @@
 const jwt = require("jsonwebtoken")
 
+const handleTokenError = (req, res, status, msg) => {
+  if (req.originalUrl.includes('loadUser')) {
+    res.status(204).json({ user: null, msg: 'No active session!' })
+  } else {
+    res.status(status).json({ msg })
+  }
+}
+
 const verifyToken = (req, res) => {
   const token = req.header('x-auth-token')
   if (!token) {
-    res.status(401).json({ msg: 'No token, authorization Denied' })
+    handleTokenError(req, res, 401, 'No token, authorization Denied')
     return null
   }
   try {
     const decoded = jwt.verify(token, process.env.JWT_SECRET)
     req.user = decoded
-    
     return decoded
   } catch (e) {
-    res.status(400).json({ msg: 'Session Expired, login again!' })
+    handleTokenError(req, res, 400, 'Session Expired, login again!')
     return null
   }
 }
@@ -28,7 +35,7 @@ const authRole = (roles) => (req, res, next) => {
   if (!decoded) return
 
   if (!req.user) {
-    return res.status(401).json({ message: 'Session expired' })
+    return res.status(401).json({ msg: 'Session expired' })
   }
 
   const allowedUser = roles.find(rol => rol === req.user.role)

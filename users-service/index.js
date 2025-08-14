@@ -1,14 +1,11 @@
 const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
-const { createServer } = require("http");
 const dotenv = require('dotenv')
-const { initialize } = require('./utils/socket')
 
 // Config
 dotenv.config()
 const app = express()
-const httpServer = createServer(app)
 
 // Utils
 const allowList = [
@@ -20,10 +17,10 @@ const allowList = [
 const corsOptions = {
     origin: (origin, callback) => {
         if (!origin || allowList.includes(origin)) {
-            callback(null, true);
+            callback(null, true)
         } else {
-            console.log(origin + ' is not allowed by CORS');
-            callback(new Error('Not allowed by CORS'));
+            console.error(`${origin} is not allowed by CORS`)
+            callback(new Error('Not allowed by CORS'))
         }
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
@@ -40,15 +37,25 @@ app.use(express.json())
 app.use("/api/users", require('./routes/users'))
 app.use("/api/subscribed-users", require('./routes/subscribed-users'))
 
-// home route
-app.get('/', (req, res) => { res.send('Welcome to QB users API') })
+// Home route
+app.get('/', (req, res) => res.send('Welcome to QB users API'))
+
+// Handle 404 errors
+app.use((req, res, next) => {
+    res.status(404).send('Route not found')
+})
+
+// Global error handler
+app.use((err, req, res, next) => {
+    console.error(err.stack)
+    res.status(500).send('Something broke!')
+})
 
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
-        httpServer.listen(process.env.PORT || 5001, () => {
+        app.listen(process.env.PORT || 5001, () => {
             console.log(`Users service is running on port ${process.env.PORT || 5001}, and MongoDB is connected`)
-            initialize(httpServer)  // Initializing Socket.io after server starts
         })
     })
     .catch((err) => console.log(err))

@@ -40,7 +40,7 @@ app.use("/api/quizzes", require('./routes/quizzes'))
 app.use("/api/questions", require('./routes/questions'))
 
 // home route
-app.get('/', (req, res) => { res.send('Welcome to QB categories API') })
+app.get('/', (req, res) => { res.send('Welcome to QB quizzing API') })
 
 mongoose
     .connect(process.env.MONGODB_URI)

@@ -19,15 +19,22 @@ const findContactById = async (id, res, selectFields = '') => {
 // Helper function to send emails to admins
 const notifyAdmins = async (newContact) => {
     try {
-        const { data: adminsEmails } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
-        
+        const res = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
+        const adminsEmails = res.data;
+
+        if (!adminsEmails) throw Error('No admins found!');
+
         adminsEmails.forEach(adm => {
-            sendEmail(
-                adm,
-                "A new message, someone contacted us!",
-                { cEmail: newContact.email },
-                "./template/contactAdmin.handlebars"
-            );
+            try {
+                sendEmail(
+                    adm,
+                    "A new message, someone contacted us!",
+                    { cEmail: newContact.email },
+                    "./template/contactAdmin.handlebars"
+                );
+            } catch (err) {
+                console.error('Error sending email to admin:', err);
+            }
         });
     } catch (err) {
         console.error('Error fetching admin emails:', err);
@@ -79,12 +86,16 @@ exports.createContact = async (req, res) => {
         if (!newContact) throw Error('Something went wrong!');
 
         // Sending e-mail to contacted user
-        sendEmail(
-            newContact.email,
-            "Thank you for contacting Quiz-Blog!",
-            { name: newContact.contact_name },
-            "./template/contact.handlebars"
-        );
+        try {
+            sendEmail(
+                newContact.email,
+                "Thank you for contacting Quiz-Blog!",
+                { name: newContact.contact_name },
+                "./template/contact.handlebars"
+            );
+        } catch (err) {
+            console.error('Error sending email to contacted user:', err);
+        }
 
         // Notify admins
         await notifyAdmins(newContact);
@@ -112,16 +123,20 @@ exports.updateContact = async (req, res) => {
         if (!newMessage) throw Error('Something went wrong while trying to update the contact');
 
         // Send Reply email
-        sendEmail(
-            req.body.to_contact,
-            "New reply",
-            {
-                name: req.body.to_contact_name,
-                question: req.body.contact_question,
-                answer: htmlMessage,
-            },
-            "./template/reply.handlebars"
-        );
+        try {
+            sendEmail(
+                req.body.to_contact,
+                "New reply",
+                {
+                    name: req.body.to_contact_name,
+                    question: req.body.contact_question,
+                    answer: htmlMessage,
+                },
+                "./template/reply.handlebars"
+            );
+        } catch (err) {
+            console.error('Error sending reply email:', err);
+        }
 
         res.status(200).json(req.body);
     } catch (error) {

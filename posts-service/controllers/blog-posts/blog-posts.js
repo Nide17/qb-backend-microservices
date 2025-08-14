@@ -24,8 +24,12 @@ exports.getBlogPosts = async (req, res) => {
 
 exports.getOneBlogPost = async (req, res) => {
     try {
-        const query = req.params.slug ? { slug: req.params.slug } : { _id: req.params.id };
-        let blogPost = await BlogPost.findOne(query).populate('postCategory', 'title');
+        const id = req.params.id;
+        const query = id.match(/^[0-9a-fA-F]{24}$/) ? { _id: id } : { slug: id };
+
+        let blogPost = await BlogPost.findOne(query)
+            .populate('postCategory', 'title');
+
         if (!blogPost) return res.status(404).json({ msg: 'BlogPost not found!' });
 
         blogPost = await blogPost.populateCreator();
@@ -36,8 +40,14 @@ exports.getOneBlogPost = async (req, res) => {
 };
 
 exports.getBlogPostsByCategory = async (req, res) => {
+
+    const id = req.params.id;
+
+    if (!id) {
+        return res.status(400).json({ msg: 'Category id not provided!' })
+    }
     try {
-        let blogPosts = await BlogPost.find({ postCategory: req.params.id }).sort({ createdAt: -1 })
+        let blogPosts = await BlogPost.find({ postCategory: id }).sort({ createdAt: -1 })
             .populate('postCategory', 'title');
         if (!blogPosts) return res.status(404).json({ msg: 'No blogPosts found!' });
 

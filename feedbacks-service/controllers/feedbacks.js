@@ -32,7 +32,6 @@ exports.getFeedbacks = async (req, res) => {
         const feedbacks = pageNo > 0 ?
             await Feedback.find({}, {}, query).sort({ createdAt: -1 }).exec() :
             await Feedback.find().sort({ createdAt: -1 }).exec();
-            // console.log(feedbacks);
 
         if (!feedbacks) throw Error('No feedbacks exist');
 

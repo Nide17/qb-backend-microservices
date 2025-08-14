@@ -14,7 +14,7 @@ const populateSenderAndQuiz = async (quizComment) => {
 
         return quizComment;
     } catch (error) {
-        console.error('Error fetching sender and quiz:', error);
+        // console.error('Error fetching sender and quiz:', error);
         return quizComment;
     }
 };

@@ -56,37 +56,24 @@ exports.getRecentTenViews = async (req, res) => {
 };
 
 exports.createBlogPostsView = async (req, res) => {
-    const bp_image = req.file ? req.file : null;
-    const { title, markdown, postCategory, creator, bgColor } = req.body;
+    const { blogPost, viewer, device, country } = req.body;
 
-    // Simple validation
-    if (!title || !markdown || !postCategory || !creator) {
-        return res.status(400).json({ msg: 'Please provide all required fields' });
+    if (!blogPost) {
+        return res.status(400).json({ msg: 'Blog post does not exist.' });
     }
 
     try {
-        const newBlogPost = new BlogPostsView({
-            title,
-            post_image: bp_image && bp_image.location,
-            markdown,
-            postCategory,
-            creator,
-            bgColor
-        });
-
-        const savedBlogPost = await newBlogPost.save();
+        const newBlogPostView = new BlogPostsView({ blogPost, viewer, device, country });
+        const savedBlogPost = await newBlogPostView.save();
 
         if (!savedBlogPost) throw Error('Something went wrong during creation! File size should not exceed 1MB');
 
         res.status(200).json({
             _id: savedBlogPost._id,
-            title: savedBlogPost.title,
-            post_image: savedBlogPost.post_image,
-            markdown: savedBlogPost.markdown,
-            postCategory: savedBlogPost.postCategory,
-            creator: savedBlogPost.creator,
-            bgColor: savedBlogPost.bgColor,
-            slug: savedBlogPost.slug
+            blogPost: savedBlogPost.blogPost,
+            viewer: savedBlogPost.viewer,
+            device: savedBlogPost.device,
+            country: savedBlogPost.country
         });
 
     } catch (err) {

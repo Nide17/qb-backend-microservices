@@ -28,7 +28,7 @@ const corsOptions = {
     },
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
     preflightContinue: false,
-    optionsSuccessStatus: 200,
+optionsSuccessStatus: 200,
     maxAge: 3600
 }
 
@@ -41,7 +41,7 @@ app.use("/api/adverts", require('./routes/adverts'))
 app.use("/api/faqs", require('./routes/faqs'))
 app.use('/api/blog-posts', require('./routes/blog-posts/blog-posts'))
 app.use('/api/post-categories', require('./routes/blog-posts/post-categories'))
-app.use('/api/image-ploads', require('./routes/blog-posts/image-uploads'))
+app.use('/api/image-uploads', require('./routes/blog-posts/image-uploads'))
 app.use('/api/blog-posts-views', require('./routes/blog-posts/blog-posts-views'))
 
 // home route
