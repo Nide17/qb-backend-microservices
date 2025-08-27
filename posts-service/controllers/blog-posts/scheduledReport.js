@@ -3,6 +3,7 @@ const { SendHtmlEmail } = require("../../utils/sendEmail")
 // const twilioSID = process.env.TWILIO_ACCOUNT_SID
 // const twilioToken = process.env.TWILIO_AUTH_TOKEN
 // const client = require('twilio')(twilioSID, twilioToken)
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // BlogPostsView Model
 const BlogPostsView = require('../../models/blog-posts/BlogPostsView')
@@ -103,7 +104,7 @@ const sendReport = async (reportMessage, reportMessageEmail, adminsEmails) => {
 
 const fetchAdminEmails = async () => {
     try {
-        const { data } = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
+        const { data } = await axios.get(`${API_GATEWAY_URL}/api/users/admins-emails`);
         return data;
     } catch (error) {
         console.error('Error fetching admin emails:', error.message);

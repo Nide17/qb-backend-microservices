@@ -1,0 +1,45 @@
+.blog-posts .sticky-categories {
+    position: sticky;
+    top: 90px;
+    height: max-content !important;
+    padding-top: 20px;
+    margin-bottom: 20px;
+}
+
+.blog-posts .PostImage {
+    display: block;
+    max-height: 320px;
+    overflow: hidden;
+    position: relative;
+    text-align: center;
+}
+
+.blog-posts .PostImage img {
+    max-width: 100%;
+    border-radius: 10px;
+}
+
+.blog-posts a p:hover {
+    text-decoration: none !important;
+}
+
+.blog-posts .cats-container {
+    border: 1px solid #dadada;
+    background-color: #fff !important;
+    border-radius: 10px;
+    padding-top: 8px;
+    padding-bottom: 8px;
+    box-shadow: 0px 12px 15px -3px #157A6E;
+}
+
+.blog-posts .cats-container a li {
+    font-size: .8rem !important;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.list-group-item.active {
+    background-color: #157A6E !important;
+    border-color: #157A6E !important;
+}

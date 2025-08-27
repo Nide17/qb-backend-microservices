@@ -1,0 +1,70 @@
+/* Skeleton container styles */
+.skeleton-container {
+    display: flex;
+    flex-wrap: wrap;
+    flex-direction: column;
+    background-color: #f7f7f7;
+    overflow: hidden;
+}
+
+/* Skeleton box styles */
+.skeleton-box {
+    background-color: #d6d6d6;
+    border-radius: 5px;
+    margin-bottom: 20px;
+    animation: shimmer 2s infinite;
+    background-size: 200% 100%;
+    background-image: linear-gradient(to right, rgba(88, 88, 88, 0.15) 0%, rgba(192, 192, 192, 0.3) 50%, rgba(148, 148, 148, 0.15) 100%);
+}
+
+.skeleton-box:nth-child(1) {
+    width: 80%;
+    height: 40px;
+    animation: shimmer 3s infinite;
+}
+
+.skeleton-box:nth-child(2) {
+    width: 100%;
+    height: 20px;
+    margin-bottom: 30px;
+    animation: shimmer 2s infinite;
+}
+
+.skeleton-box:nth-child(3) {
+    width: 100%;
+    height: 80px;
+    animation: shimmer 4s infinite;
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -300% 0;
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 0.8;
+    }
+
+    100% {
+        background-position: 300% 0;
+        opacity: 0.3;
+    }
+}
+
+/* Media queries for responsiveness */
+@media (max-width: 768px) {
+    .skeleton-box {
+        width: 100%;
+        height: 30px;
+        margin-bottom: 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .skeleton-box {
+        width: 100%;
+        height: 20px;
+        margin-bottom: 5px;
+    }
+}

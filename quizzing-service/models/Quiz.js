@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const slugify = require("slugify")
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 //initialize Mongo schema
 const Schema = mongoose.Schema
@@ -79,7 +80,7 @@ QuizSchema.methods.populateCreatedBy = async function () {
   let user = null;
   if (quiz.created_by) {
     try {
-      user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${quiz.created_by}`);
+      user = await axios.get(`${API_GATEWAY_URL}/api/users/${quiz.created_by}`);
     } catch (error) {
       console.error('Error fetching user:', error);
       user = null;
@@ -98,7 +99,7 @@ QuizSchema.methods.populateLastUpdatedBy = async function () {
   let user = null;
   if (quiz.last_updated_by) {
     try {
-      user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${quiz.last_updated_by}`);
+      user = await axios.get(`${API_GATEWAY_URL}/api/users/${quiz.last_updated_by}`);
     } catch (error) {
       console.error('Error fetching user:', error);
       user = null;

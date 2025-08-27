@@ -1,0 +1,28 @@
+version: '3.8'
+
+services:
+  # Client (React Frontend) - Development Mode
+  client:
+    build:
+      context: ./client
+      dockerfile: Dockerfile.dev
+    container_name: qb-client-dev
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - REACT_APP_API_URL=http://localhost:5000
+      - VITE_REACT_APP_CONTACTS_URL=http://localhost:5008
+    volumes:
+      - ./client/src:/app/src
+      - ./client/public:/app/public
+    depends_on:
+      - api-gateway
+      - contacts-service
+    networks:
+      - qb-network
+
+networks:
+  qb-network:
+    external: true

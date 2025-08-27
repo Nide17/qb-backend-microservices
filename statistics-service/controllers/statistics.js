@@ -1,6 +1,6 @@
 const axios = require('axios');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
 exports.get50NewUsers = async (req, res) => {
     try {

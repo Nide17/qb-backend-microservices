@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose');
 const dbScores = require('../utils/db');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 //initialize Mongo schema
 const Schema = mongoose.Schema;
@@ -85,9 +86,9 @@ ScoreSchema.methods.populateQuizDetails = async function () {
     let score = this;
     const axios = require('axios');
     try {
-        const catg = score.category && await axios.get(`${process.env.API_GATEWAY_URL}/api/categories/${score.category}`);
-        const qz = score.quiz && await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${score.quiz}`);
-        const usr = score.taken_by && await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.taken_by}`);
+        const catg = score.category && await axios.get(`${API_GATEWAY_URL}/api/categories/${score.category}`);
+        const qz = score.quiz && await axios.get(`${API_GATEWAY_URL}/api/quizzes/${score.quiz}`);
+        const usr = score.taken_by && await axios.get(`${API_GATEWAY_URL}/api/users/${score.taken_by}`);
 
         score = score.toObject();
         score.category = catg && { _id: catg.data._id, title: catg.data.title };

@@ -2,6 +2,7 @@ const axios = require('axios');
 const Broadcast = require("../models/Broadcast");
 const { sendEmail } = require("../utils/emails/sendEmail");
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to find broadcast by ID
 const findBroadcastById = async (id, res, selectFields = '') => {
@@ -57,7 +58,7 @@ exports.getOneBroadcast = async (req, res) => {
 
     let sent_by = null;
     if (broadcast.sent_by) {
-        sent_by = await fetchData(`${process.env.API_GATEWAY_URL}/api/users/${broadcast.sent_by}`, res);
+        sent_by = await fetchData(`${API_GATEWAY_URL}/api/users/${broadcast.sent_by}`, res);
     }
     res.status(200).json({ ...broadcast._doc, sent_by });
 };
@@ -76,8 +77,8 @@ exports.createBroadcast = async (req, res) => {
         const savedBroadcast = await newBroadcast.save();
         if (!savedBroadcast) throw Error('Something went wrong during creation!');
 
-        const subscribers = await fetchData(`${process.env.API_GATEWAY_URL}/api/subscribed-users`, res);
-        const allUsers = await fetchData(`${process.env.API_GATEWAY_URL}/api/users`, res);
+        const subscribers = await fetchData(`${API_GATEWAY_URL}/api/subscribed-users`, res);
+        const allUsers = await fetchData(`${API_GATEWAY_URL}/api/users`, res);
 
         sendEmails(subscribers, title, message, clientURL);
         sendEmails(allUsers, title, message, clientURL);

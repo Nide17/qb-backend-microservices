@@ -1,12 +1,13 @@
 const QuizComment = require("../models/QuizComment");
 const axios = require('axios');
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to populate sender and quiz fields
 const populateSenderAndQuiz = async (quizComment) => {
     try {
-        const sender = quizComment.sender ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${quizComment.sender}`) : null;
-        const quiz = quizComment.quiz ? await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${quizComment.quiz}`) : null;
+        const sender = quizComment.sender ? await axios.get(`${API_GATEWAY_URL}/api/users/${quizComment.sender}`) : null;
+        const quiz = quizComment.quiz ? await axios.get(`${API_GATEWAY_URL}/api/quizzes/${quizComment.quiz}`) : null;
 
         quizComment = quizComment.toObject();
         quizComment.sender = sender ? sender.data : null;

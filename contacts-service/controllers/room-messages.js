@@ -1,6 +1,7 @@
 const axios = require('axios');
 const RoomMessage = require("../models/RoomMessage");
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to find roomMessage by ID
 const findRoomMessageById = async (id, res, selectFields = '') => {
@@ -27,8 +28,8 @@ exports.getRoomMessages = async (req, res) => {
 
         for (const roomMessage of roomMessages) {
             try {
-                const senderResponse = roomMessage.sender ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.sender}`) : null;
-                const receiverResponse = roomMessage.receiver ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${roomMessage.receiver}`) : null;
+                const senderResponse = roomMessage.sender ? await axios.get(`${API_GATEWAY_URL}/api/users/${roomMessage.sender}`) : null;
+                const receiverResponse = roomMessage.receiver ? await axios.get(`${API_GATEWAY_URL}/api/users/${roomMessage.receiver}`) : null;
                 roomMessage.sender = senderResponse ? senderResponse.data : null;
                 roomMessage.receiver = receiverResponse ? receiverResponse.data : null;
             } catch (fetchError) {

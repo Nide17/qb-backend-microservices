@@ -2,6 +2,7 @@
 const mongoose = require('mongoose')
 const slugify = require("slugify")
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 //initialize Mongo schema
 const Schema = mongoose.Schema
@@ -62,7 +63,7 @@ NotesSchema.methods.populateQuizzes = async function () {
     const quizzes = await Promise.all(
         notes.quizzes.map(async (quizId) => {
             try {
-                const quiz = quizId ? await axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${quizId}`) : null;
+                const quiz = quizId ? await axios.get(`${API_GATEWAY_URL}/api/quizzes/${quizId}`) : null;
                 return quiz ? quiz.data : null;
             } catch (error) {
                 return null;

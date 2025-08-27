@@ -1,0 +1,43 @@
+.similar-posts .relatedLatestImage {
+    margin: 8px 0 24px;
+    max-width: 100%;
+    padding: 0;
+    position: relative;
+    display: flex;
+}
+
+.similar-posts .relatedLatestImage img {
+    border: 1px solid rgba(5, 22, 12, 0.2);
+    border-radius: 3px;
+    height: auto !important;
+    max-height: 100px;
+    max-width: 60px;
+    width: auto !important;
+    margin: 0 auto !important;
+}
+
+.similar-posts h6 {
+    margin-bottom: 0.1rem !important;
+}
+
+.similar-posts h6 a {
+    font-size: .8rem !important;
+    line-height: .7rem !important;
+    margin-bottom: .2rem !important;
+    font-weight: 900;
+    color: #157A6E !important;
+}
+
+.similar-posts p {
+    font-size: 50% !important;
+    margin-bottom: .1rem !important;
+    text-align: left !important;
+    text-transform: uppercase !important;
+}
+
+@media screen and (max-width: 768px) {
+    .similar-posts .relatedLatestImage img {
+        max-height: 400px !important;
+        max-width: 100% !important;
+    }
+}

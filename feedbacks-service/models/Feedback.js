@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose');
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 //initialize Mongo schema
 const Schema = mongoose.Schema;
@@ -27,11 +28,11 @@ FeedbackSchema.methods.populateDetails = async function () {
 
   try {
     const [quiz, score] = await Promise.all([
-      feedback.quiz ? axios.get(`${process.env.API_GATEWAY_URL}/api/quizzes/${feedback.quiz}`) : null,
-      feedback.score ? axios.get(`${process.env.API_GATEWAY_URL}/api/scores/${feedback.score}`) : null
+      feedback.quiz ? axios.get(`${API_GATEWAY_URL}/api/quizzes/${feedback.quiz}`) : null,
+      feedback.score ? axios.get(`${API_GATEWAY_URL}/api/scores/${feedback.score}`) : null
     ]);
 
-    const user = score?.data?.taken_by ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${score.data.taken_by}`) : null;
+    const user = score?.data?.taken_by ? await axios.get(`${API_GATEWAY_URL}/api/users/${score.data.taken_by}`) : null;
 
     feedback = feedback.toObject();
     feedback.quiz = quiz ? { _id: quiz.data._id, title: quiz.data.title } : null;

@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose');
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Initialize Mongo schema
 const Schema = mongoose.Schema;
@@ -24,7 +25,7 @@ ImageUploadSchema.methods.populateOwner = async function () {
 
     if (upload.owner) {
         try {
-            const response = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${upload.owner}`);
+            const response = await axios.get(`${API_GATEWAY_URL}/api/users/${upload.owner}`);
             owner = response.data;
         } catch (error) {
             console.error('Error fetching owner details:', error);

@@ -4,6 +4,7 @@ const { sendEmail } = require("../utils/emails/sendEmail");
 const { convertFromRaw } = require("draft-js");
 const { stateToHTML } = require("draft-js-export-html");
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to find contact by ID
 const findContactById = async (id, res, selectFields = '') => {
@@ -19,7 +20,7 @@ const findContactById = async (id, res, selectFields = '') => {
 // Helper function to send emails to admins
 const notifyAdmins = async (newContact) => {
     try {
-        const res = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/admins-emails`);
+        const res = await axios.get(`${API_GATEWAY_URL}/api/users/admins-emails`);
         const adminsEmails = res.data;
 
         if (!adminsEmails) throw Error('No admins found!');

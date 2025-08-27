@@ -2,6 +2,7 @@ const axios = require('axios');
 const ChatRoom = require("../models/ChatRoom");
 const RoomMessage = require("../models/RoomMessage");
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to find chatRoom by ID
 const findChatRoomById = async (id, res, selectFields = '') => {
@@ -32,7 +33,7 @@ const populateUsersInChatRooms = async (chatRooms) => {
     try {
         // for each user, get user details
         uniqueUserIds.forEach(async (userId) => {
-            usrResp = userId ? await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${userId}`) : null;
+            usrResp = userId ? await axios.get(`${API_GATEWAY_URL}/api/users/${userId}`) : null;
 
             // combine each user details in usersResponse
             usersResponse = [...usersResponse, usrResp.data];

@@ -116,6 +116,7 @@ const routeToService = (serviceUrl) => async (req, res) => {
                 id: error.response.data?.id,
             });
         } else {
+            console.error('Unexpected error:', error);
             res.status(500).send({
                 error: `Something went wrong: ${req.originalUrl.split('/')[2]}`
             });

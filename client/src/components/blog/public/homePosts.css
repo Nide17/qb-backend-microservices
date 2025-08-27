@@ -1,0 +1,15 @@
+/*****************/
+/* SMALL TABLET */
+/***************/
+
+@media screen and (max-width: 768px) {
+
+    b.post-title {  
+        font-size: .65rem;
+    }
+
+    span.view-blog-post {
+        font-size: .5rem;
+    }
+
+}

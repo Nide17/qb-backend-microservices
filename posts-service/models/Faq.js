@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose');
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 //initialize Mongo schema
 const Schema = mongoose.Schema;
@@ -40,7 +41,7 @@ FaqSchema.methods.populateCreatedBy = async function () {
 
     if (faq.created_by) {
         try {
-            user = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${faq.created_by}`);
+            user = await axios.get(`${API_GATEWAY_URL}/api/users/${faq.created_by}`);
         } catch (error) {
             user = null;
         }

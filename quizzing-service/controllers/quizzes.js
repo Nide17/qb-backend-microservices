@@ -3,6 +3,7 @@ const Quiz = require("../models/Quiz");
 const Category = require("../models/Category");
 const Question = require("../models/Question");
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to find quiz by ID
 const findQuizById = async (id, res, selectFields = '') => {
@@ -165,7 +166,7 @@ exports.notifying = async (req, res) => {
         let subscribers = [];
 
         try {
-            const { data } = await axios.get(`${process.env.API_GATEWAY_URL}/api/subscribed-users`);
+            const { data } = await axios.get(`${API_GATEWAY_URL}/api/subscribed-users`);
             subscribers = data;
         } catch (error) {
             console.error('Error fetching subscribers:', error.message);

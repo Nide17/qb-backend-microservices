@@ -68,7 +68,8 @@ exports.getScoresForQuizCreator = async (req, res) => {
 
         res.status(200).json(scores);
     } catch (err) {
-        handleError(res, err, 'Failed to retrieve: ');
+        console.log('Error retrieving scores for quiz creator: ', err);
+        handleError(res, err);
     }
 }
 
@@ -133,7 +134,8 @@ exports.getPopularQuizzes = async (req, res) => {
 
         res.json(popularQuizzes);
     } catch (error) {
-        handleError(res, error, 'Failed to retrieve popular quizzes! ');
+        console.log('Error retrieving popular quizzes: ', error);
+        handleError(res, error);
     }
 }
 
@@ -164,7 +166,8 @@ exports.getMonthlyUser = async (req, res) => {
             res.json(null);
         }
     } catch (error) {
-        handleError(res, error, 'Failed to retrieve monthly user! ');
+        console.log('Error retrieving monthly user: ', error);
+        handleError(res, error);
     }
 }
 
@@ -229,7 +232,8 @@ exports.createScore = async (req, res) => {
                 taken_by: savedScore.taken_by
             })
         } catch (err) {
-            handleError(res, err, 'Failed to save score! ');
+            console.log('Error creating score: ', err);
+            handleError(res, err);
         }
     }
 }
@@ -250,7 +254,8 @@ exports.deleteScore = async (req, res) => {
     }
 
     catch (err) {
-        handleError(res, err, 'Failed to delete! ');
+        console.log('Error deleting score: ', err);
+        handleError(res, err);
     }
 }
 

@@ -56,6 +56,7 @@ NODE_ENV=development
 PORT=5001
 MONGODB_URI=mongodb://admin:password123@localhost:27017/users?authSource=admin
 JWT_SECRET=your-super-secret-jwt-key-change-in-production
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -73,6 +74,7 @@ cat > posts-service/.env << EOF
 NODE_ENV=development
 PORT=5003
 MONGODB_URI=mongodb://admin:password123@localhost:27017/posts?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -81,6 +83,7 @@ cat > schools-service/.env << EOF
 NODE_ENV=development
 PORT=5004
 MONGODB_URI=mongodb://admin:password123@localhost:27017/schools?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -89,6 +92,7 @@ cat > courses-service/.env << EOF
 NODE_ENV=development
 PORT=5005
 MONGODB_URI=mongodb://admin:password123@localhost:27017/courses?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -97,6 +101,7 @@ cat > scores-service/.env << EOF
 NODE_ENV=development
 PORT=5006
 MONGODB_URI=mongodb://admin:password123@localhost:27017/scores?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -105,6 +110,7 @@ cat > downloads-service/.env << EOF
 NODE_ENV=development
 PORT=5007
 MONGODB_URI=mongodb://admin:password123@localhost:27017/downloads?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -113,6 +119,7 @@ cat > contacts-service/.env << EOF
 NODE_ENV=development
 PORT=5008
 MONGODB_URI=mongodb://admin:password123@localhost:27017/contacts?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -121,6 +128,7 @@ cat > feedbacks-service/.env << EOF
 NODE_ENV=development
 PORT=5009
 MONGODB_URI=mongodb://admin:password123@localhost:27017/feedbacks?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -129,6 +137,7 @@ cat > comments-service/.env << EOF
 NODE_ENV=development
 PORT=5010
 MONGODB_URI=mongodb://admin:password123@localhost:27017/comments?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 
@@ -137,6 +146,7 @@ cat > statistics-service/.env << EOF
 NODE_ENV=development
 PORT=5011
 MONGODB_URI=mongodb://admin:password123@localhost:27017/statistics?authSource=admin
+API_GATEWAY_URL=http://localhost:5000
 LOG_LEVEL=info
 EOF
 

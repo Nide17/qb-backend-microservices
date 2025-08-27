@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // initialize Mongo schema 
 const Schema = mongoose.Schema
@@ -34,7 +35,7 @@ BlogPostsViewSchema.methods.populateViewer = async function () {
 
     if (view.viewer) {
         try {
-            viewer = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${view.viewer}`);
+            viewer = await axios.get(`${API_GATEWAY_URL}/api/users/${view.viewer}`);
         } catch (error) {
             viewer = null;
         }

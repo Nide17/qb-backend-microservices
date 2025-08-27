@@ -2,6 +2,7 @@
 const mongoose = require('mongoose')
 const slugify = require("slugify")
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 const Schema = mongoose.Schema
 
@@ -50,7 +51,7 @@ BlogPostSchema.methods.populateCreator = async function () {
 
     if (blogPost.creator) {
         try {
-            creator = await axios.get(`${process.env.API_GATEWAY_URL}/api/users/${blogPost.creator}`);
+            creator = await axios.get(`${API_GATEWAY_URL}/api/users/${blogPost.creator}`);
         } catch (error) {
             console.error('Error fetching creator:', error.message);
             creator = null;

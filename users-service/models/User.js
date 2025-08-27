@@ -1,6 +1,7 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const axios = require('axios');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Initialize Mongo schema
 const Schema = mongoose.Schema
@@ -79,9 +80,9 @@ UserSchema.methods.populateSchoolData = async function () {
 
   try {
     const [schl, level, faculty] = await Promise.all([
-      user.school ? axios.get(`${process.env.API_GATEWAY_URL}/api/schools/${user.school}`) : null,
-      user.level ? axios.get(`${process.env.API_GATEWAY_URL}/api/levels/${user.level}`) : null,
-      user.faculty ? axios.get(`${process.env.API_GATEWAY_URL}/api/faculties/${user.faculty}`) : null
+      user.school ? axios.get(`${API_GATEWAY_URL}/api/schools/${user.school}`) : null,
+      user.level ? axios.get(`${API_GATEWAY_URL}/api/levels/${user.level}`) : null,
+      user.faculty ? axios.get(`${API_GATEWAY_URL}/api/faculties/${user.faculty}`) : null
     ]);
 
     user = user.toObject();

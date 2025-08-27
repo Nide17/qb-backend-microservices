@@ -1,7 +1,7 @@
 const axios = require('axios');
 const Download = require("../models/Download");
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 const { handleError } = require('../utils/error');
+const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 // Helper function to fetch related data for a download
 const fetchDownloadDetails = async (download) => {
