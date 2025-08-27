@@ -109,6 +109,7 @@ exports.getAdminsEmails = async (req, res) => {
         const adminEmails = admins.map(admin => admin.email)
         return res.status(200).json(adminEmails)
     } catch (err) {
+        console.error(err)
         handleError(res, err)
     }
 }

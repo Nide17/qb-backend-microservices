@@ -5,8 +5,15 @@ class RedisCacheManager {
         this.redis = null;
         this.isConnected = false;
         this.defaultTTL = 300; // 5 minutes in seconds
-        this.retryDelay = 5000; // 5 seconds
-        this.maxRetries = 3;
+        this.retryDelay = 30000; // 30 seconds
+        this.maxRetries = 1;
+        
+        // Fallback in-memory cache
+        this.memoryCache = new Map();
+        this.memoryTTL = new Map();
+        this.useMemoryFallback = true;
+        
+        console.log('🧠 Memory cache fallback enabled');
     }
 
     async connect() {
@@ -16,15 +23,13 @@ class RedisCacheManager {
                 port: process.env.REDIS_PORT || 6379,
                 password: process.env.REDIS_PASSWORD,
                 db: process.env.REDIS_DB || 0,
-                retryDelayOnFailover: this.retryDelay,
-                maxRetriesPerRequest: this.maxRetries,
+                retryDelayOnFailover: 0,
+                maxRetriesPerRequest: 0,
                 lazyConnect: true,
-                keepAlive: 30000,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
-                retryDelayOnClusterDown: 300,
+                connectTimeout: 2000,
+                commandTimeout: 2000,
                 enableOfflineQueue: false,
-                maxLoadingTimeout: 10000,
+                maxLoadingTimeout: 2000,
             });
 
             this.redis.on('connect', () => {
@@ -32,24 +37,18 @@ class RedisCacheManager {
                 this.isConnected = true;
             });
 
-            this.redis.on('error', (err) => {
-                console.error('❌ Redis connection error:', err);
+            this.redis.on('error', () => {
                 this.isConnected = false;
             });
 
             this.redis.on('close', () => {
-                console.log('🔌 Redis connection closed');
                 this.isConnected = false;
-            });
-
-            this.redis.on('reconnecting', () => {
-                console.log('🔄 Redis reconnecting...');
             });
 
             await this.redis.connect();
             return true;
         } catch (error) {
-            console.error('Failed to connect to Redis:', error);
+            console.log('📦 Using memory cache (Redis unavailable)');
             this.isConnected = false;
             return false;
         }
@@ -62,65 +61,105 @@ class RedisCacheManager {
         }
     }
 
+    // Memory cache helper methods
+    _cleanExpiredMemoryKeys() {
+        const now = Date.now();
+        for (const [key, expiry] of this.memoryTTL.entries()) {
+            if (expiry <= now) {
+                this.memoryCache.delete(key);
+                this.memoryTTL.delete(key);
+            }
+        }
+    }
+
     async get(key) {
-        if (!this.isConnected || !this.redis) {
-            return null;
+        // Try Redis first if connected
+        if (this.isConnected && this.redis) {
+            try {
+                const value = await this.redis.get(key);
+                return value ? JSON.parse(value) : null;
+            } catch (error) {
+                // Silent fallback to memory cache
+            }
         }
 
-        try {
-            const value = await this.redis.get(key);
-            return value ? JSON.parse(value) : null;
-        } catch (error) {
-            console.error('Redis get error:', error);
-            return null;
+        // Fallback to memory cache
+        if (this.useMemoryFallback) {
+            this._cleanExpiredMemoryKeys();
+            const value = this.memoryCache.get(key);
+            return value || null;
         }
+
+        return null;
     }
 
     async set(key, value, ttl = this.defaultTTL) {
-        if (!this.isConnected || !this.redis) {
-            return false;
+        // Try Redis first if connected
+        if (this.isConnected && this.redis) {
+            try {
+                const serializedValue = JSON.stringify(value);
+                if (ttl > 0) {
+                    await this.redis.setex(key, ttl, serializedValue);
+                } else {
+                    await this.redis.set(key, serializedValue);
+                }
+                return true;
+            } catch (error) {
+                // Silent fallback to memory cache
+            }
         }
 
-        try {
-            const serializedValue = JSON.stringify(value);
+        // Fallback to memory cache
+        if (this.useMemoryFallback) {
+            this.memoryCache.set(key, value);
             if (ttl > 0) {
-                await this.redis.setex(key, ttl, serializedValue);
-            } else {
-                await this.redis.set(key, serializedValue);
+                this.memoryTTL.set(key, Date.now() + (ttl * 1000));
             }
             return true;
-        } catch (error) {
-            console.error('Redis set error:', error);
-            return false;
         }
+
+        return false;
     }
 
     async del(key) {
-        if (!this.isConnected || !this.redis) {
-            return false;
+        // Try Redis first if connected
+        if (this.isConnected && this.redis) {
+            try {
+                await this.redis.del(key);
+                return true;
+            } catch (error) {
+                // Silent fallback to memory cache
+            }
         }
 
-        try {
-            await this.redis.del(key);
+        // Fallback to memory cache
+        if (this.useMemoryFallback) {
+            this.memoryCache.delete(key);
+            this.memoryTTL.delete(key);
             return true;
-        } catch (error) {
-            console.error('Redis del error:', error);
-            return false;
         }
+
+        return false;
     }
 
     async exists(key) {
-        if (!this.isConnected || !this.redis) {
-            return false;
+        // Try Redis first if connected
+        if (this.isConnected && this.redis) {
+            try {
+                const result = await this.redis.exists(key);
+                return result === 1;
+            } catch (error) {
+                // Silent fallback to memory cache
+            }
         }
 
-        try {
-            const result = await this.redis.exists(key);
-            return result === 1;
-        } catch (error) {
-            console.error('Redis exists error:', error);
-            return false;
+        // Fallback to memory cache
+        if (this.useMemoryFallback) {
+            this._cleanExpiredMemoryKeys();
+            return this.memoryCache.has(key);
         }
+
+        return false;
     }
 
     async expire(key, ttl) {

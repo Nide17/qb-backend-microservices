@@ -1,5 +1,5 @@
 const express = require("express")
-const { get50NewUsers, getAllUsers, getUsersWithImage, getUsersWithSchool, getUsersWithLevel, getUsersWithFaculty, getUsersWithInterests, getUsersWithAbout, getTop100Quizzing, getTop100Downloaders, getTop20Quizzes, getQuizzesStats, getTop20Notes, getNotesStats, getQuizCategoriesStats, getNotesCategoriesStats, getDailyUserRegistration } = require("../controllers/statistics")
+const { get50NewUsers, getAllUsers, getUsersWithImage, getUsersWithSchool, getUsersWithLevel, getUsersWithFaculty, getUsersWithInterests, getUsersWithAbout, getTop100Quizzing, getTop100Downloaders, getTop20Quizzes, getQuizzesStats, getTop20Notes, getNotesStats, getQuizCategoriesStats, getNotesCategoriesStats, getDailyUserRegistration, getDashboardStats, updateDashboardStats, getLiveAnalytics, clearStatsCache } = require("../controllers/statistics")
 const { authRole } = require("../middlewares/auth")
 
 const router = express.Router()
@@ -22,5 +22,10 @@ router.get("/quiz-categories-stats", authRole(['Admin', 'SuperAdmin']), getQuizC
 router.get("/notes-categories-stats", authRole(['Admin', 'SuperAdmin']), getNotesCategoriesStats)
 router.get("/daily-user-registration", authRole(['Admin', 'SuperAdmin']), getDailyUserRegistration)
 
+// New enhanced endpoints
+router.get("/dashboard-stats", getDashboardStats)
+router.post("/update-dashboard-stats", authRole(['Admin', 'SuperAdmin']), updateDashboardStats)
+router.get("/live-analytics", authRole(['Admin', 'SuperAdmin']), getLiveAnalytics)
+router.delete("/clear-cache", authRole(['SuperAdmin']), clearStatsCache)
 
 module.exports = router

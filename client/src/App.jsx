@@ -1,4 +1,4 @@
-import React, { useEffect, lazy, Suspense, useState, useCallback } from 'react'
+import React, { useEffect, lazy, Suspense, useState, useCallback, useMemo } from 'react'
 import { Routes, Route, Link, useLocation } from "react-router-dom"
 import { Toast } from 'reactstrap'
 import ReactGA from "react-ga4"
@@ -7,6 +7,8 @@ import 'react-toastify/dist/ReactToastify.css'
 import { logRegContext } from './appContexts'
 import { getCategories, getCourseCategories, getLandingDisplayNotes, loadUser } from './redux/slices'
 import { useSelector, useDispatch } from "react-redux"
+import SEOHead from './components/seo/SEOHead'
+import ErrorBoundary from './components/errors/ErrorBoundary'
 import ForgotPassword from './components/auth/ForgotPassword'
 import ResetPassword from './components/auth/ResetPassword'
 import Unsubscribe from './components/auth/Unsubscribe'
@@ -93,6 +95,53 @@ const App = () => {
     const categories = useSelector(state => state.categories)
     const courseCategories = useSelector(state => state.courseCategories)
 
+    // Memoize context value to prevent unnecessary re-renders
+    const contextValue = useMemo(() => ({
+        isOpenL, 
+        toggleL, 
+        isOpenR, 
+        toggleR
+    }), [isOpenL, toggleL, isOpenR, toggleR])
+
+    // Generate SEO data based on current route
+    const seoData = useMemo(() => {
+        const path = location.pathname
+        const baseTitle = 'Quiz Blog - Interactive Learning Platform'
+        
+        switch (path) {
+            case '/':
+                return {
+                    title: baseTitle,
+                    description: 'Interactive learning platform with quizzes, educational notes, and blog posts for students and professionals.',
+                    keywords: 'quiz, education, learning, notes, blog, students, online learning, interactive'
+                }
+            case '/all-categories':
+                return {
+                    title: 'Quiz Categories | Quiz Blog',
+                    description: 'Browse all quiz categories and test your knowledge in various subjects.',
+                    keywords: 'quiz categories, subjects, education, learning, tests'
+                }
+            case '/course-notes':
+                return {
+                    title: 'Course Notes | Quiz Blog',
+                    description: 'Access comprehensive course notes and study materials for various subjects.',
+                    keywords: 'course notes, study materials, education, learning resources'
+                }
+            case '/blog':
+                return {
+                    title: 'Educational Blog | Quiz Blog',
+                    description: 'Read educational blog posts and articles on various academic topics.',
+                    keywords: 'educational blog, articles, academic content, learning'
+                }
+            default:
+                return {
+                    title: baseTitle,
+                    description: 'Interactive learning platform with quizzes, educational notes, and blog posts.',
+                    keywords: 'quiz, education, learning, notes, blog'
+                }
+        }
+    }, [location.pathname])
+
     useEffect(() => {
 
         if (currentUser) {
@@ -109,9 +158,16 @@ const App = () => {
     }, [currentUser])
 
     return (
-        <logRegContext.Provider value={{ isOpenL, toggleL, isOpenR, toggleR }}>
-            <Suspense fallback={<QBLoading />}>
-                <Toast isOpen={modal} className={`w-100 popup-toast`}>
+        <ErrorBoundary>
+            <SEOHead 
+                title={seoData.title}
+                description={seoData.description}
+                keywords={seoData.keywords}
+                url={window.location.href}
+            />
+            <logRegContext.Provider value={contextValue}>
+                <Suspense fallback={<QBLoading />}>
+                <Toast isOpen={modal} className={`w-100 popup-toast`} fade={false}>
                     <div className="bg-warning py-2 px-3 d-flex justify-content-between align-items-center">
                         <p className='text-danger text-center fw-bolder d-block mb-0'>
                             &nbsp;&nbsp;Your profile is {`${percentage}`} % up to date!
@@ -191,6 +247,7 @@ const App = () => {
                 <Footer />
             </Suspense>
         </logRegContext.Provider>
+        </ErrorBoundary>
     )
 }
 

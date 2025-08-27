@@ -1,11 +1,24 @@
 const express = require('express');
+const http = require('http');
+const socketIo = require('socket.io');
 const axios = require('axios');
 // const morgan = require('morgan');
 const cors = require('cors');
 const RedisCacheManager = require('./redis-cache');
+const HealthMonitor = require('../shared-utils/health-monitor');
 require('dotenv').config();
 
 const app = express();
+const server = http.createServer(app);
+const io = socketIo(server, {
+    cors: {
+        origin: process.env.CLIENT_URL || "http://localhost:3000",
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    transports: ['websocket', 'polling']
+});
+
 app.use(express.json());
 // app.use(morgan('combined'));
 app.use(cors());
@@ -13,9 +26,15 @@ app.use(cors());
 // Initialize Redis cache manager
 const redisCache = new RedisCacheManager();
 
+// Initialize health monitor
+const healthMonitor = new HealthMonitor();
+
 // In-memory cache as fallback
 const memoryCache = new Map();
 const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Add health monitoring middleware
+app.use(healthMonitor.middleware());
 
 // Enhanced cache functions with Redis fallback
 const getCachedData = async (key) => {
@@ -411,53 +430,48 @@ app.get('/api/aggregated/search', async (req, res) => {
     }
 });
 
-// Health Check with Service Status
+// Enhanced Health Check with Service Status and Metrics
 app.get('/api/health', async (req, res) => {
-    const services = [
-        { name: 'Users', url: process.env.USERS_SERVICE_URL },
-        { name: 'Quizzing', url: process.env.QUIZZING_SERVICE_URL },
-        { name: 'Posts', url: process.env.POSTS_SERVICE_URL },
-        { name: 'Schools', url: process.env.SCHOOLS_SERVICE_URL },
-        { name: 'Courses', url: process.env.COURSES_SERVICE_URL },
-        { name: 'Scores', url: process.env.SCORES_SERVICE_URL },
-        { name: 'Downloads', url: process.env.DOWNLOADS_SERVICE_URL },
-        { name: 'Contacts', url: process.env.CONTACTS_SERVICE_URL },
-        { name: 'Feedbacks', url: process.env.FEEDBACKS_SERVICE_URL },
-        { name: 'Comments', url: process.env.COMMENTS_SERVICE_URL },
-        { name: 'Statistics', url: process.env.STATISTICS_SERVICE_URL }
-    ];
+    const services = {
+        'Users': process.env.USERS_SERVICE_URL,
+        'Quizzing': process.env.QUIZZING_SERVICE_URL,
+        'Posts': process.env.POSTS_SERVICE_URL,
+        'Schools': process.env.SCHOOLS_SERVICE_URL,
+        'Courses': process.env.COURSES_SERVICE_URL,
+        'Scores': process.env.SCORES_SERVICE_URL,
+        'Downloads': process.env.DOWNLOADS_SERVICE_URL,
+        'Contacts': process.env.CONTACTS_SERVICE_URL,
+        'Feedbacks': process.env.FEEDBACKS_SERVICE_URL,
+        'Comments': process.env.COMMENTS_SERVICE_URL,
+        'Statistics': process.env.STATISTICS_SERVICE_URL
+    };
 
-    const healthChecks = await Promise.allSettled(
-        services.map(async (service) => {
-            try {
-                const response = await axios.get(`${service.url}/`, { timeout: 5000 });
-                return { name: service.name, status: 'healthy', responseTime: response.headers['x-response-time'] || 'N/A' };
-            } catch (error) {
-                return { name: service.name, status: 'unhealthy', error: error.message };
-            }
-        })
-    );
-
-    const serviceStatus = healthChecks.map(check =>
-        check.status === 'fulfilled' ? check.value : { name: 'Unknown', status: 'error', error: 'Check failed' }
-    );
-
-    const overallStatus = serviceStatus.every(service => service.status === 'healthy') ? 'healthy' : 'degraded';
-
-    res.json({
-        status: overallStatus,
-        timestamp: new Date().toISOString(),
-        services: serviceStatus,
-        cache: {
-            redis: {
-                connected: redisCache.isConnected,
-                stats: await redisCache.getStats()
-            },
-            memory: {
-                size: memoryCache.size,
-                keys: Array.from(memoryCache.keys())
-            }
+    const healthReport = await healthMonitor.getHealthReport(services);
+    
+    // Add cache information
+    healthReport.cache = {
+        redis: {
+            connected: redisCache.isConnected,
+            stats: await redisCache.getStats()
+        },
+        memory: {
+            size: memoryCache.size,
+            keys: Array.from(memoryCache.keys())
         }
+    };
+
+    res.json(healthReport);
+});
+
+// Metrics endpoint
+app.get('/api/metrics', (req, res) => {
+    const metrics = healthMonitor.getMetricsSummary();
+    const systemMetrics = healthMonitor.getSystemMetrics();
+    
+    res.json({
+        ...metrics,
+        system: systemMetrics,
+        timestamp: new Date().toISOString()
     });
 });
 
@@ -543,6 +557,50 @@ app.use((err, req, res, next) => {
     res.status(err.status || 500).send({ error: err.message });
 });
 
+// Socket.io connection handling
+io.on('connection', (socket) => {
+    console.log('Client connected:', socket.id);
+    
+    // Join user-specific room for personalized updates
+    socket.on('join-user-room', (userId) => {
+        socket.join(`user-${userId}`);
+        console.log(`User ${userId} joined room user-${userId}`);
+    });
+    
+    // Join quiz room for real-time quiz features
+    socket.on('join-quiz-room', (quizId) => {
+        socket.join(`quiz-${quizId}`);
+        console.log(`Socket ${socket.id} joined quiz room quiz-${quizId}`);
+    });
+    
+    // Handle quiz progress updates
+    socket.on('quiz-progress', (data) => {
+        socket.to(`quiz-${data.quizId}`).emit('quiz-progress-update', data);
+    });
+    
+    // Handle real-time comments
+    socket.on('new-comment', (data) => {
+        io.to(`quiz-${data.quizId}`).emit('comment-added', data);
+    });
+    
+    // Handle score updates
+    socket.on('score-update', (data) => {
+        io.to(`user-${data.userId}`).emit('score-updated', data);
+        // Broadcast to dashboard if needed
+        io.emit('dashboard-stats-update', { type: 'score', data });
+    });
+    
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
+
+// Middleware to attach socket.io to requests
+app.use((req, res, next) => {
+    req.io = io;
+    next();
+});
+
 // Port
 const PORT = process.env.PORT || 5000;
 
@@ -552,8 +610,8 @@ async function startServer() {
         // Connect to Redis
         await redisCache.connect();
 
-        app.listen(PORT, () => {
-            console.log(`🚀 API Gateway is running on port ${PORT}`);
+        server.listen(PORT, () => {
+            console.log(`🚀 API Gateway with Socket.io running on port ${PORT}`);
             console.log('📡 Ready to route requests to microservices');
             console.log(`📦 Redis cache: ${redisCache.isConnected ? 'Connected' : 'Disconnected'}`);
         });
@@ -567,13 +625,15 @@ startServer();
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-    console.log('Received SIGTERM, shutting down gracefully...');
+    console.log('SIGTERM received, shutting down gracefully');
+    io.close();
     await redisCache.disconnect();
     process.exit(0);
 });
 
 process.on('SIGINT', async () => {
-    console.log('Received SIGINT, shutting down gracefully...');
+    console.log('SIGINT received, shutting down gracefully');
+    io.close();
     await redisCache.disconnect();
     process.exit(0);
 });

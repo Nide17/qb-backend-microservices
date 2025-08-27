@@ -107,7 +107,7 @@ const fetchAdminEmails = async () => {
         const { data } = await axios.get(`${API_GATEWAY_URL}/api/users/admins-emails`);
         return data;
     } catch (error) {
-        console.error('Error fetching admin emails:', error.message);
+        console.error('Error fetching admin emails:', error);
         return [];
     }
 }

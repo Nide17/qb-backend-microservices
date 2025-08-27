@@ -3,6 +3,35 @@ const Score = require("../models/Score");
 const { handleError } = require('../utils/error');
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL;
 
+// Cache for frequently accessed data
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+// Helper function to get cached data
+const getCachedData = (key) => {
+    const cached = cache.get(key);
+    if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        return cached.data;
+    }
+    cache.delete(key);
+    return null;
+};
+
+// Helper function to set cached data
+const setCachedData = (key, data) => {
+    cache.set(key, { data, timestamp: Date.now() });
+};
+
+// Clear expired cache entries periodically
+setInterval(() => {
+    const now = Date.now();
+    for (const [key, value] of cache.entries()) {
+        if (now - value.timestamp >= CACHE_TTL) {
+            cache.delete(key);
+        }
+    }
+}, CACHE_TTL);
+
 const handleScoresPopulation = async (scores) => {
     return await Promise.all(scores.map(async score => {
         const scoreInstance = new Score(score);
@@ -44,14 +73,20 @@ exports.getScores = async (req, res) => {
 }
 
 exports.getScoresByTaker = async (req, res) => {
-
     let id = req.params.id;
+    const cacheKey = `scores_user_${id}`;
 
     try {
-        let scores = await Score.find({ taken_by: id }).exec();
-        if (!scores) throw Error('No scores found');
+        // Check cache first
+        let scores = getCachedData(cacheKey);
+        
+        if (!scores) {
+            scores = await Score.find({ taken_by: id }).sort({ test_date: -1 }).exec();
+            if (!scores || scores.length === 0) throw Error('No scores found');
 
-        scores = await handleScoresPopulation(scores);
+            scores = await handleScoresPopulation(scores);
+            setCachedData(cacheKey, scores);
+        }
 
         res.status(200).json(scores);
     } catch (err) {
@@ -95,11 +130,19 @@ exports.getOneScore = async (req, res) => {
 
 exports.getRanking = async (req, res) => {
     let id = req.params.id;
+    const cacheKey = `ranking_${id}`;
+    
     try {
-        let scores = await Score.find({ quiz: id }).sort({ marks: -1 }).limit(20).exec();
-        if (!scores) throw Error('No scores found');
+        // Check cache first
+        let scores = getCachedData(cacheKey);
+        
+        if (!scores) {
+            scores = await Score.find({ quiz: id }).sort({ marks: -1 }).limit(20).exec();
+            if (!scores || scores.length === 0) throw Error('No scores found');
 
-        scores = await handleScoresPopulation(scores);
+            scores = await handleScoresPopulation(scores);
+            setCachedData(cacheKey, scores);
+        }
 
         res.status(200).json(scores);
     } catch (err) {
@@ -108,29 +151,45 @@ exports.getRanking = async (req, res) => {
 }
 
 exports.getPopularQuizzes = async (req, res) => {
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-
-    const endOfDay = new Date();
-    endOfDay.setHours(23, 59, 59, 999);
-
+    const cacheKey = 'popular_quizzes';
+    
     try {
-        const topQuizzes = await Score.aggregate([
-            { $match: { test_date: { $gte: startOfDay, $lte: endOfDay } } },
-            { $group: { _id: "$quiz", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 3 }
-        ]).exec();
+        // Check cache first
+        let popularQuizzes = getCachedData(cacheKey);
+        
+        if (!popularQuizzes) {
+            const startOfDay = new Date();
+            startOfDay.setHours(0, 0, 0, 0);
 
-        const quizIds = topQuizzes.map(q => q._id);
-        const quizzes = await axios.get(`${API_GATEWAY_URL}/api/quizzes`, { params: { ids: quizIds } });
+            const endOfDay = new Date();
+            endOfDay.setHours(23, 59, 59, 999);
 
-        const popularQuizzes = topQuizzes.map(pq => ({
-            _id: pq._id,
-            qTitle: quizzes.data.find(q => q._id === pq._id).title,
-            slug: quizzes.data.find(q => q._id === pq._id).slug,
-            count: pq.count
-        }));
+            const topQuizzes = await Score.aggregate([
+                { $match: { test_date: { $gte: startOfDay, $lte: endOfDay } } },
+                { $group: { _id: "$quiz", count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 3 }
+            ]).exec();
+
+            if (topQuizzes.length > 0) {
+                const quizIds = topQuizzes.map(q => q._id);
+                const quizzes = await axios.get(`${API_GATEWAY_URL}/api/quizzes`, { 
+                    params: { ids: quizIds },
+                    timeout: 5000
+                });
+
+                popularQuizzes = topQuizzes.map(pq => ({
+                    _id: pq._id,
+                    qTitle: quizzes.data.find(q => q._id === pq._id)?.title || 'Unknown Quiz',
+                    slug: quizzes.data.find(q => q._id === pq._id)?.slug || '',
+                    count: pq.count
+                }));
+            } else {
+                popularQuizzes = [];
+            }
+            
+            setCachedData(cacheKey, popularQuizzes);
+        }
 
         res.json(popularQuizzes);
     } catch (error) {
@@ -140,31 +199,49 @@ exports.getPopularQuizzes = async (req, res) => {
 }
 
 exports.getMonthlyUser = async (req, res) => {
-
-    const startOfMonth = new Date();
-    startOfMonth.setDate(1);
-    startOfMonth.setHours(0, 0, 0, 0);
-
-    const endOfMonth = new Date();
-    endOfMonth.setHours(23, 59, 59, 999);
-
+    const cacheKey = 'monthly_user';
+    
     try {
-        const monthlyUser = await Score.aggregate([
-            { $match: { test_date: { $gte: startOfMonth, $lte: endOfMonth } } },
-            { $group: { _id: "$taken_by", count: { $sum: 1 } } },
-            { $sort: { count: -1 } },
-            { $limit: 1 }
-        ]).exec();
+        // Check cache first
+        let monthlyUserData = getCachedData(cacheKey);
+        
+        if (!monthlyUserData) {
+            const startOfMonth = new Date();
+            startOfMonth.setDate(1);
+            startOfMonth.setHours(0, 0, 0, 0);
 
-        if (monthlyUser.length > 0) {
-            const user = await axios.get(`${API_GATEWAY_URL}/api/users/${monthlyUser[0]._id}`);
-            res.json({
-                uName: user.data.name,
-                uPhoto: user.data.image
-            });
-        } else {
-            res.json(null);
+            const endOfMonth = new Date();
+            endOfMonth.setHours(23, 59, 59, 999);
+
+            const monthlyUser = await Score.aggregate([
+                { $match: { test_date: { $gte: startOfMonth, $lte: endOfMonth } } },
+                { $group: { _id: "$taken_by", count: { $sum: 1 } } },
+                { $sort: { count: -1 } },
+                { $limit: 1 }
+            ]).exec();
+
+            if (monthlyUser.length > 0) {
+                try {
+                    const user = await axios.get(`${API_GATEWAY_URL}/api/users/${monthlyUser[0]._id}`, {
+                        timeout: 5000
+                    });
+                    monthlyUserData = {
+                        uName: user.data.name,
+                        uPhoto: user.data.image,
+                        count: monthlyUser[0].count
+                    };
+                } catch (userError) {
+                    console.log('Error fetching user data:', userError);
+                    monthlyUserData = null;
+                }
+            } else {
+                monthlyUserData = null;
+            }
+            
+            setCachedData(cacheKey, monthlyUserData);
         }
+
+        res.json(monthlyUserData);
     } catch (error) {
         console.log('Error retrieving monthly user: ', error);
         handleError(res, error);
@@ -184,8 +261,11 @@ exports.createScore = async (req, res) => {
 
     else {
         try {
-            const existingScore = await Score.find({ id: id })
-            const recentScoreExist = await Score.find({ taken_by }, {}, { sort: { 'test_date': -1 } })
+            // Use Promise.all for parallel queries to improve performance
+            const [existingScore, recentScoreExist] = await Promise.all([
+                Score.find({ id: id }),
+                Score.find({ taken_by }, {}, { sort: { 'test_date': -1 }, limit: 1 })
+            ]);
 
             if (existingScore.length > 0) {
                 return res.status(400).json({
@@ -194,7 +274,7 @@ exports.createScore = async (req, res) => {
             }
 
             if (recentScoreExist.length > 0) {
-                // Check if the score was saved within 10 seconds
+                // Check if the score was saved within 60 seconds
                 let testDate = new Date(recentScoreExist[0].test_date)
                 let seconds = Math.round((now - testDate) / 1000)
 
@@ -219,6 +299,35 @@ exports.createScore = async (req, res) => {
             const savedScore = await newScore.save()
 
             if (!savedScore) throw Error('Something went wrong during creation!')
+
+            // Clear relevant cache entries
+            const cacheKeysToDelete = [`scores_user_${taken_by}`, `ranking_${quiz}`, 'popular_quizzes', 'monthly_user'];
+            cacheKeysToDelete.forEach(key => cache.delete(key));
+
+            // Emit real-time update if socket.io is available
+            if (req.io) {
+                req.io.to(`user-${taken_by}`).emit('score-updated', {
+                    score: savedScore,
+                    type: 'new_score'
+                });
+                
+                // Broadcast to quiz room for leaderboard updates
+                req.io.to(`quiz-${quiz}`).emit('leaderboard-update', {
+                    quizId: quiz,
+                    newScore: {
+                        userId: taken_by,
+                        marks,
+                        out_of,
+                        test_date: now
+                    }
+                });
+
+                // Broadcast dashboard stats update
+                req.io.emit('dashboard-stats-update', {
+                    type: 'new_score',
+                    data: { quiz, marks, out_of, taken_by }
+                });
+            }
 
             res.status(200).json({
                 _id: savedScore._id,

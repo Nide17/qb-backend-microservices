@@ -13,32 +13,59 @@ export default defineConfig({
   },
   build: {
     outDir: 'build',
-    chunkSizeWarningLimit: 2000,
+    chunkSizeWarningLimit: 1000,
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: true,
+        drop_debugger: true
+      }
+    },
     rollupOptions: {
       output: {
-        manualChunks(id) {
-          if (id.includes('node_modules')) {
-            if (id.includes('react') || id.includes('react-dom')) {
-              return 'vendor';
-            }
-            if (id.includes('@reduxjs') || id.includes('react-redux')) {
-              return 'redux';
-            }
-            return 'libs';
-          }
-        }
+        manualChunks: {
+          // Vendor chunks for better caching
+          'react-vendor': ['react', 'react-dom'],
+          'redux-vendor': ['@reduxjs/toolkit', 'react-redux'],
+          'router-vendor': ['react-router-dom'],
+          'ui-vendor': ['reactstrap', 'bootstrap'],
+          'utils-vendor': ['axios', 'moment', 'uuid'],
+          'editor-vendor': ['draft-js', 'react-draft-wysiwyg'],
+          'charts-vendor': ['react-google-charts'],
+          'socket-vendor': ['socket.io-client']
+        },
+        // Optimize asset filenames
+        chunkFileNames: 'assets/js/[name]-[hash].js',
+        entryFileNames: 'assets/js/[name]-[hash].js',
+        assetFileNames: 'assets/[ext]/[name]-[hash].[ext]'
       }
     }
   },
   resolve: {
     alias: {
       '@': '/src',
+      '@components': '/src/components',
+      '@utils': '/src/utils',
+      '@redux': '/src/redux',
+      '@images': '/src/images'
     },
   },
   define: {
     global: 'globalThis',
   },
   optimizeDeps: {
-    include: ['react', 'react-dom']
+    include: [
+      'react', 
+      'react-dom', 
+      'react-router-dom',
+      '@reduxjs/toolkit',
+      'react-redux',
+      'axios',
+      'reactstrap'
+    ]
+  },
+  // Additional performance optimizations
+  esbuild: {
+    drop: ['console', 'debugger']
   }
 })

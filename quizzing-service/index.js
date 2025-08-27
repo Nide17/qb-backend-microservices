@@ -77,11 +77,10 @@ app.get('/health', async (req, res) => {
 async function startService() {
     try {
         await mongoose.connect(process.env.MONGODB_URI);
-        
+
         httpServer.listen(process.env.PORT || 5002, () => {
-            console.log(`Quizzing service is running on port ${process.env.PORT || 5002}`)
-            console.log('MongoDB connection established')
-        })
+            console.log(`Quizzing service is running on port ${process.env.PORT || 5002} and connected to MongoDB`);
+        });
     } catch (err) {
         console.error('Failed to start quizzing service:', err);
         process.exit(1);

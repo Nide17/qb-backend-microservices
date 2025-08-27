@@ -41,4 +41,4 @@ app.get('/', (req, res) => { res.send('Welcome to QB statistics API') })
 // Server
 const PORT = process.env.PORT || 5011
 
-app.listen(PORT, () => console.log(`API Gateway is running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Statistics service is running on port ${PORT}`));
