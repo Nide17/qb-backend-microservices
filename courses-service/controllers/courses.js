@@ -7,7 +7,7 @@ const { handleError } = require('../utils/error');
 const findCourseById = async (id, res, selectFields = '') => {
     try {
         const course = await Course.findById(id).select(selectFields);
-        if (!course) return res.status(404).json({ msg: 'No course found!' });
+        if (!course) return res.status(404).json({ message: 'No course found!' });
         return course;
     } catch (err) {
         return handleError(res, err);
@@ -17,7 +17,7 @@ const findCourseById = async (id, res, selectFields = '') => {
 exports.getCourses = async (req, res) => {
     try {
         const courses = await Course.find().sort({ createdAt: -1 });
-        if (!courses) throw Error('No courses found!');
+        if (!courses) return res.status(404).json({ message: 'No courses found!' });
         res.status(200).json(courses);
     } catch (err) {
         handleError(res, err);
@@ -43,12 +43,12 @@ exports.createCourse = async (req, res) => {
 
     // Simple validation
     if (!title || !description || !courseCategory) {
-        return res.status(400).json({ msg: 'Please fill all fields' });
+        return res.status(400).json({ message: 'Please fill all fields' });
     }
 
     try {
         const course = await Course.findOne({ title });
-        if (course) throw Error('Course already exists!');
+        if (course) return res.status(400).json({ message: 'Course already exists!' });
 
         const newCourse = new Course({
             title,
@@ -58,7 +58,7 @@ exports.createCourse = async (req, res) => {
         });
 
         const savedCourse = await newCourse.save();
-        if (!savedCourse) throw Error('Something went wrong during creation!');
+        if (!savedCourse) return res.status(500).json({ message: 'Could not save course, try again!' });
 
         res.status(200).json({
             _id: savedCourse._id,
@@ -102,7 +102,7 @@ exports.deleteCourse = async (req, res) => {
         const removedCourse = await Course.deleteOne({ _id: req.params.id });
         if (!removedCourse) throw Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: `Deleted!` });
+        res.status(200).json({ message: `Deleted!` });
     } catch (err) {
         handleError(res, err);
     }

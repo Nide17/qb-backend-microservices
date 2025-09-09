@@ -15,7 +15,7 @@ const s3Config = new S3({
 const findQuestionById = async (id, res, selectFields = '') => {
     try {
         const question = await Question.findById(id).select(selectFields).populate('category quiz');
-        if (!question) return res.status(404).json({ msg: 'No question found!' });
+        if (!question) return res.status(404).json({ message: 'No question found!' });
         return question;
     } catch (err) {
         return handleError(res, err);
@@ -52,7 +52,7 @@ exports.getQuestions = async (req, res) => {
     
     try {
         const questions = await Question.find().sort({ createdAt: -1 }).populate('category quiz');
-        if (!questions) return res.status(404).json({ msg: 'No questions found!' });
+        if (!questions) return res.status(404).json({ message: 'No questions found!' });
         res.status(200).json(questions);
     } catch (err) {
         handleError(res, err);
@@ -73,16 +73,16 @@ exports.createQuestion = async (req, res) => {
 
     // Simple validation
     if (!questionText && !qnImage) {
-        return res.status(400).json({ msg: 'Question text or Image is required!' });
+        return res.status(400).json({ message: 'Question text or Image is required!' });
     } else if (!questionText || !quiz || !category || !answerOptions || !duration) {
-        return res.status(400).json({ msg: 'Please fill all fields' });
+        return res.status(400).json({ message: 'Please fill all fields' });
     }
 
     try {
         let qtn = await Question.findOne({ questionText });
 
         if (qtn) {
-            return res.status(400).json({ msg: 'A question with same name already exists!' });
+            return res.status(400).json({ message: 'A question with same name already exists!' });
         }
 
         const newQuestion = new Question({
@@ -100,7 +100,7 @@ exports.createQuestion = async (req, res) => {
         // Update the Quiz on Question creation
         await updateQuizQuestions(quiz, savedQuestion._id, 'add');
 
-        if (!savedQuestion) throw Error('Something went wrong during creation!');
+        if (!savedQuestion) return res.status(500).json({ message: 'Could not save question, try again!' });
 
         res.status(200).json(savedQuestion);
     } catch (err) {
@@ -114,7 +114,7 @@ exports.updateQuestion = async (req, res) => {
 
     // Find the Question by id
     const qtn = await Question.findOne({ _id: req.params.id });
-    if (!qtn) throw Error('Failed! question does not exists!');
+    if (!qtn) return res.status(404).json({ message: 'Question not found' });
 
     try {
         // Changing question's quiz
@@ -160,7 +160,7 @@ exports.deleteQuestion = async (req, res) => {
     try {
         // Find the Question to delete by id first
         const question = await Question.findById(req.params.id);
-        if (!question) throw Error('Question is not found!');
+        if (!question) return res.status(404).json({ message: 'Question not found' });
 
         // Delete existing image
         await deleteImageFromS3(question.question_image);
@@ -171,9 +171,9 @@ exports.deleteQuestion = async (req, res) => {
         // Delete the question
         const removedQuestion = await Question.deleteOne({ _id: req.params.id });
 
-        if (!removedQuestion) throw Error('Something went wrong while deleting!');
+        if (!removedQuestion) return res.status(500).json({ message: 'Could not delete question, try again!' });
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

@@ -3,8 +3,10 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const { createServer } = require("http")
+const { Server } = require("socket.io")
 const dotenv = require('dotenv')
-const { initialize } = require('./utils/socket')
+const contactsSocketManager = require('./utils/enhanced-socket')
+const { notFoundHandler, globalErrorHandler } = require('./utils/error')
 
 // Config
 dotenv.config()
@@ -14,7 +16,7 @@ const httpServer = createServer(app)
 // Utils
 const allowList = [
     'http://localhost:5173',
-    'http://localhost:4000',
+    'http://localhost:3000',
     'http://localhost:5008',
 ];
 
@@ -47,13 +49,49 @@ app.use("/api/room-messages", require('./routes/room-messages'))
 // home route
 app.get('/', (req, res) => { res.send('Welcome to QB contacts API') })
 
+
+// Health check endpoint
+app.get('/health', async (req, res) => {
+    try {
+        const dbStatus = mongoose.connection.readyState === 1;
+        res.json({
+            service: 'contacts-service',
+            status: 'healthy',
+            database: dbStatus ? 'connected' : 'disconnected',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    } catch (error) {
+        res.status(503).json({
+            service: 'contacts-service',
+            status: 'unhealthy',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
+// Handle 404 errors
+app.use(notFoundHandler())
+
+// Global error handler
+app.use(globalErrorHandler())
+
 // Database connection and server start
 mongoose
     .connect(process.env.MONGODB_URI)
     .then(() => {
         httpServer.listen(process.env.PORT || 5008, () => {
             console.log(`Contacts service is running on port ${process.env.PORT || 5008}, and MongoDB is connected`)
-            initialize(httpServer)  // Initializing Socket.io after server starts
+            
+            // Initialize Socket.io with enhanced contacts functionality
+            const io = new Server(httpServer, {
+                cors: corsOptions,
+                transports: ['websocket', 'polling']
+            });
+            
+            contactsSocketManager.initialize(io);
+            console.log('🔌 Enhanced contacts socket manager initialized');
         })
     })
     .catch((err) => {

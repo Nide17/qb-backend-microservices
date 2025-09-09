@@ -1,8 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const slugify = require("slugify")
-const axios = require('axios');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 const Schema = mongoose.Schema
 
@@ -44,23 +42,5 @@ BlogPostSchema.pre("validate", function (next) {
     }
     next()
 })
-
-BlogPostSchema.methods.populateCreator = async function () {
-    let blogPost = this;
-    let creator = null;
-
-    if (blogPost.creator) {
-        try {
-            creator = await axios.get(`${API_GATEWAY_URL}/api/users/${blogPost.creator}`);
-        } catch (error) {
-            console.error('Error fetching creator:', error.message);
-            creator = null;
-        }
-    }
-
-    blogPost = blogPost.toObject();
-    blogPost.creator = creator && creator.data && { _id: creator.data._id, name: creator.data.name };
-    return blogPost;
-};
 
 module.exports = mongoose.model("BlogPost", BlogPostSchema)

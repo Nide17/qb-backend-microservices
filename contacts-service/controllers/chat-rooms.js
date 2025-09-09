@@ -2,13 +2,13 @@ const axios = require('axios');
 const ChatRoom = require("../models/ChatRoom");
 const RoomMessage = require("../models/RoomMessage");
 const { handleError } = require('../utils/error');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL;
 
 // Helper function to find chatRoom by ID
 const findChatRoomById = async (id, res, selectFields = '') => {
     try {
         const chatRoom = await ChatRoom.findById(id).select(selectFields);
-        if (!chatRoom) return res.status(404).json({ msg: 'No chatRoom found!' });
+        if (!chatRoom) return res.status(404).json({ message: 'No chatRoom found!' });
         return chatRoom;
     } catch (err) {
         return handleError(res, err);
@@ -27,32 +27,37 @@ const validateRequestBody = (body, requiredFields) => {
 // Helper function to populate users in chat rooms
 const populateUsersInChatRooms = async (chatRooms) => {
     const userIds = chatRooms.map(room => room.users).flat();
-    const uniqueUserIds = [...new Set(userIds)];
+    const uniqueUserIds = [...new Set(userIds)].filter(id => id);
 
-    let usersResponse;
     try {
-        // for each user, get user details
-        uniqueUserIds.forEach(async (userId) => {
-            usrResp = userId ? await axios.get(`${API_GATEWAY_URL}/api/users/${userId}`) : null;
+        const userResults = await Promise.allSettled(
+            uniqueUserIds.map(async (userId) => {
+                if (!userId) return null;
+                const response = await axios.get(`${USERS_SERVICE_URL}/api/users/${userId}`, { 
+                    headers: { 'x-internal-service': 'true' }
+                });
+                return response.data;
+            })
+        );
 
-            // combine each user details in usersResponse
-            usersResponse = [...usersResponse, usrResp.data];
-            });
-    } catch (err) {
-        console.error('Error fetching user data:', err);
-        usersResponse = [];
+        const usersResponse = userResults
+            .filter(result => result.status === 'fulfilled' && result.value)
+            .map(result => result.value);
+        
+        const usersMap = usersResponse.reduce((acc, user) => {
+            acc[user._id] = user;
+            return acc;
+        }, {});
+
+        chatRooms.forEach(room => {
+            room.users = room.users.map(userId => usersMap[userId]);
+        });
+
+        return chatRooms;
+    } catch (error) {
+        console.log('Error populating users in chat rooms:', error.message);
+        return chatRooms;
     }
-    
-    const usersMap = usersResponse.reduce((acc, user) => {
-        acc[user._id] = user;
-        return acc;
-    }, {});
-
-    chatRooms.forEach(room => {
-        room.users = room.users.map(userId => usersMap[userId]);
-    });
-
-    return chatRooms;
 };
 
 exports.getChatRooms = async (req, res) => {
@@ -77,7 +82,12 @@ exports.createChatRoom = async (req, res) => {
 
         const newRoom = new ChatRoom({ name, users });
         const savedRoom = await newRoom.save();
-        if (!savedRoom) throw Error('Something went wrong during creation!');
+        if (!savedRoom) {
+            return res.status(500).json({
+                success: false,
+                message: 'Something went wrong during creation!'
+            });
+        }
 
         res.status(200).json({
             _id: savedRoom._id,

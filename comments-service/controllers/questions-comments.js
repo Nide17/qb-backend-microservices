@@ -1,24 +1,34 @@
+const axios = require("axios");
 const QuestionComment = require("../models/QuestionComment");
-const axios = require('axios');
 const { handleError } = require('../utils/error');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL;
+const QUIZZING_SERVICE_URL = process.env.QUIZZING_SERVICE_URL;
 
 // Helper function to populate sender and quiz fields
 const populateSenderAndQuiz = async (questionComment) => {
     try {
-        const sender = questionComment.sender ? await axios.get(`${API_GATEWAY_URL}/api/users/${questionComment.sender}`) : null;
-        const question = questionComment.question ? await axios.get(`${API_GATEWAY_URL}/api/questions/${questionComment.question}`) : null;
-        const quiz = questionComment.quiz ? await axios.get(`${API_GATEWAY_URL}/api/quizzes/${questionComment.quiz}`) : null;
+        const [senderResult, questionResult, quizResult] = await Promise.allSettled([
+            questionComment.sender ? axios.get(`${USERS_SERVICE_URL}/api/users/${questionComment.sender}`, { 
+                headers: { 'x-internal-service': 'true' }
+            }) : Promise.resolve(null),
+            questionComment.question ? axios.get(`${QUIZZING_SERVICE_URL}/api/questions/${questionComment.question}`, { 
+                headers: { 'x-internal-service': 'true' }
+            }) : Promise.resolve(null),
+            questionComment.quiz ? axios.get(`${QUIZZING_SERVICE_URL}/api/quizzes/${questionComment.quiz}`, { 
+                headers: { 'x-internal-service': 'true' }
+            }) : Promise.resolve(null)
+        ]);
 
         questionComment = questionComment.toObject();
-        questionComment.sender = sender ? sender.data : null;
-        questionComment.question = question ? question.data : null;
-        questionComment.quiz = quiz ? quiz.data : null;
+        questionComment.sender = senderResult.status === 'fulfilled' && senderResult.value ? senderResult.value.data : null;
+        questionComment.question = questionResult.status === 'fulfilled' && questionResult.value ? questionResult.value.data : null;
+        questionComment.quiz = quizResult.status === 'fulfilled' && quizResult.value ? quizResult.value.data : null;
 
         return questionComment;
     } catch (error) {
-        console.error('Error fetching sender and quiz:', error);
-        return questionComment;
+        console.log('Error populating sender and quiz:', error.message);
+        return questionComment.toObject ? questionComment.toObject() : questionComment;
     }
 };
 
@@ -26,7 +36,7 @@ const populateSenderAndQuiz = async (questionComment) => {
 const findQuestionCommentById = async (id, res, selectFields = '') => {
     try {
         let questionComment = await QuestionComment.findById(id).select(selectFields);
-        if (!questionComment) return res.status(404).json({ msg: 'No questionComment found!' });
+        if (!questionComment) return res.status(404).json({ message: 'No questionComment found!' });
 
         questionComment = await populateSenderAndQuiz(questionComment);
 
@@ -40,7 +50,7 @@ const findQuestionCommentById = async (id, res, selectFields = '') => {
 const updateQuestionCommentStatus = async (id, status, res) => {
     try {
         const questionComment = await QuestionComment.findById(id);
-        if (!questionComment) return res.status(404).json({ msg: 'QuestionComment not found!' });
+        if (!questionComment) return res.status(404).json({ message: 'QuestionComment not found!' });
 
         const updatedQuestionComment = await QuestionComment.findByIdAndUpdate(id, { status }, { new: true });
         res.status(200).json(updatedQuestionComment);
@@ -138,7 +148,7 @@ exports.createQuestionComment = async (req, res) => {
 
     // Simple validation
     if (!comment || !sender || !quiz || !question) {
-        return res.status(400).json({ msg: 'There are empty fields' });
+        return res.status(400).json({ message: 'There are empty fields' });
     }
 
     try {
@@ -150,7 +160,7 @@ exports.createQuestionComment = async (req, res) => {
         });
 
         const savedQuestionComment = await newQuestionComment.save();
-        if (!savedQuestionComment) throw Error('Something went wrong during creation!');
+        if (!savedQuestionComment) return res.status(500).json({ message: 'Something went wrong during creation!' });
 
         res.status(200).json({
             _id: savedQuestionComment._id,
@@ -175,7 +185,7 @@ exports.rejectQuestionsComment = async (req, res) => {
 exports.updateQuestionComment = async (req, res) => {
     try {
         const questionComment = await QuestionComment.findById(req.params.id);
-        if (!questionComment) return res.status(404).json({ msg: 'QuestionComment not found!' });
+        if (!questionComment) return res.status(404).json({ message: 'QuestionComment not found!' });
 
         const updatedQuestionComment = await QuestionComment.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedQuestionComment);
@@ -187,12 +197,12 @@ exports.updateQuestionComment = async (req, res) => {
 exports.deleteQuestionComment = async (req, res) => {
     try {
         const questionComment = await QuestionComment.findById(req.params.id);
-        if (!questionComment) throw Error('QuestionComment not found!');
+        if (!questionComment) return res.status(404).json({ message: 'QuestionComment not found!' });
 
         const removedQuestionComment = await QuestionComment.deleteOne({ _id: req.params.id });
-        if (removedQuestionComment.deletedCount === 0) throw Error('Something went wrong while deleting!');
+        if (removedQuestionComment.deletedCount === 0) return res.status(500).json({ message: 'Something went wrong while deleting!' });
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

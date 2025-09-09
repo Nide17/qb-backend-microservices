@@ -5,7 +5,7 @@ const { handleError } = require('../utils/error');
 const findFeedbackById = async (id, res, selectFields = '') => {
     try {
         let feedback = await Feedback.findById(id).select(selectFields);
-        if (!feedback) return res.status(404).json({ msg: 'No feedback found!' });
+        if (!feedback) return res.status(404).json({ message: 'No feedback found!' });
 
         feedback = await feedback.populateDetails();
         return feedback;
@@ -33,7 +33,9 @@ exports.getFeedbacks = async (req, res) => {
             await Feedback.find({}, {}, query).sort({ createdAt: -1 }).exec() :
             await Feedback.find().sort({ createdAt: -1 }).exec();
 
-        if (!feedbacks) throw Error('No feedbacks exist');
+        if (!feedbacks) {
+            return res.status(204).json({ message: 'No feedbacks found!' });
+        }
 
         const feedbacksWithDetails = await Promise.all(feedbacks.map(async (feedback) => await feedback.populateDetails()));
 
@@ -69,7 +71,7 @@ exports.createFeedback = async (req, res) => {
 exports.updateFeedback = async (req, res) => {
     try {
         const feedback = await Feedback.findById(req.params.id);
-        if (!feedback) return res.status(404).json({ msg: 'Feedback not found!' });
+        if (!feedback) return res.status(404).json({ message: 'Feedback not found!' });
 
         const updatedFeedback = await Feedback.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedFeedback);
@@ -86,7 +88,7 @@ exports.deleteFeedback = async (req, res) => {
         const removedFeedback = await Feedback.deleteOne({ _id: req.params.id });
         if (removedFeedback.deletedCount === 0) throw Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

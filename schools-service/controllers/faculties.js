@@ -5,7 +5,7 @@ const { handleError } = require('../utils/error');
 const findFacultyById = async (id, res, selectFields = '') => {
     try {
         const faculty = await Faculty.findById(id).select(selectFields).populate('school level');
-        if (!faculty) return res.status(404).json({ msg: 'No faculty found!' });
+        if (!faculty) return res.status(404).json({ message: 'No faculty found!' });
         return faculty;
     } catch (err) {
         return handleError(res, err);
@@ -43,7 +43,7 @@ exports.createFaculty = async (req, res) => {
 
     // Simple validation
     if (!title || !school || !level || !years) {
-        return res.status(400).json({ msg: 'Please fill all fields' })
+        return res.status(400).json({ message: 'Please fill all fields' })
     }
 
     try {
@@ -76,7 +76,7 @@ exports.createFaculty = async (req, res) => {
 exports.updateFaculty = async (req, res) => {
     try {
         const faculty = await Faculty.findById(req.params.id);
-        if (!faculty) return res.status(404).json({ msg: 'Faculty not found!' });
+        if (!faculty) return res.status(404).json({ message: 'Faculty not found!' });
 
         const updatedFaculty = await Faculty.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedFaculty);
@@ -93,7 +93,7 @@ exports.deleteFaculty = async (req, res) => {
         const removedFaculty = await Faculty.deleteOne({ _id: req.params.id });
         if (!removedFaculty) throw Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: `${faculty.title} is Deleted!` });
+        res.status(200).json({ message: `${faculty.title} is Deleted!` });
     } catch (err) {
         handleError(res, err);
     }

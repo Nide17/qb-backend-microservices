@@ -27,7 +27,7 @@ const sendActualMail = async (transporter, mailOptions, retries) => {
       return info;
     } catch (error) {
       console.error(`Attempt ${i + 1} failed: ${error.message}`);
-      if (i === retries - 1) throw error;
+      if (i === retries - 1) return error.message;
     }
   }
 };

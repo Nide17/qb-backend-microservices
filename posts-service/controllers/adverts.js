@@ -13,7 +13,7 @@ const s3Config = new S3({
 const findAdvertById = async (id, res, selectFields = '') => {
     try {
         const advert = await Advert.findById(id).select(selectFields);
-        if (!advert) return res.status(404).json({ msg: 'No advert found!' });
+        if (!advert) return res.status(404).json({ message: 'No advert found!' });
         return advert;
     } catch (err) {
         return handleError(res, err);
@@ -32,7 +32,7 @@ const deleteImageFromS3 = async (imagePath) => {
 exports.getAdverts = async (req, res) => {
     try {
         const adverts = await Advert.find().sort({ createdAt: -1 });
-        if (!adverts) return res.status(404).json({ msg: 'No adverts found!' });
+        if (!adverts) return res.status(204).json({ message: 'No adverts found!' });
         res.status(200).json(adverts);
     } catch (err) {
         handleError(res, err);
@@ -47,7 +47,7 @@ exports.getOneAdvert = async (req, res) => {
 exports.getActiveAdverts = async (req, res) => {
     try {
         const adverts = await Advert.find({ status: 'Active' }).sort({ createdAt: -1 });
-        if (!adverts) return res.status(404).json({ msg: 'No active adverts found!' });
+        if (!adverts) return res.status(404).json({ message: 'No active adverts found!' });
         res.status(200).json(adverts);
     } catch (err) {
         handleError(res, err);
@@ -57,7 +57,7 @@ exports.getActiveAdverts = async (req, res) => {
 exports.getCreatedBy = async (req, res) => {
     try {
         const adverts = await Advert.find({ owner: req.params.id }).sort({ createdAt: -1 });
-        if (!adverts) return res.status(404).json({ msg: 'No adverts found!' });
+        if (!adverts) return res.status(404).json({ message: 'No adverts found!' });
         res.status(200).json(adverts);
     } catch (err) {
         handleError(res, err);
@@ -69,7 +69,7 @@ exports.createAdvert = async (req, res) => {
 
     // Simple validation
     if (!caption || !owner || !email || !phone) {
-        return res.status(400).json({ msg: 'Please fill required fields' });
+        return res.status(400).json({ message: 'Please fill required fields' });
     }
 
     if (!req.file) {
@@ -109,7 +109,7 @@ exports.createAdvert = async (req, res) => {
 exports.updateAdvert = async (req, res) => {
     try {
         const advert = await Advert.findById(req.params.id);
-        if (!advert) return res.status(404).json({ msg: 'Advert not found!' });
+        if (!advert) return res.status(404).json({ message: 'Advert not found!' });
 
         const updatedAdvert = await Advert.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedAdvert);
@@ -121,10 +121,10 @@ exports.updateAdvert = async (req, res) => {
 exports.updateAdvertStatus = async (req, res) => {
     try {
         const advert = await Advert.findById(req.params.id);
-        if (!advert) return res.status(404).json({ msg: 'Advert not found!' });
+        if (!advert) return res.status(404).json({ message: 'Advert not found!' });
 
         const updatedAdvert = await Advert.findByIdAndUpdate(req.params.id, { status: req.body.status }, { new: true });
-        res.status(200).json({ advert: updatedAdvert, msg: 'Updated successfully!' });
+        res.status(200).json({ advert: updatedAdvert, message: 'Updated successfully!' });
     } catch (error) {
         handleError(res, error);
     }
@@ -142,7 +142,7 @@ exports.deleteAdvert = async (req, res) => {
         const removedAdvert = await Advert.deleteOne({ _id: req.params.id });
         if (!removedAdvert) throw new Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: `${removedAdvert.caption} is Deleted!` });
+        res.status(200).json({ message: `${removedAdvert.caption} is Deleted!` });
     } catch (err) {
         handleError(res, err);
     }
@@ -151,7 +151,7 @@ exports.deleteAdvert = async (req, res) => {
 exports.deleteAdvertImage = async (req, res) => {
     try {
         const advert = await Advert.findById(req.params.id);
-        if (!advert) return res.status(404).json({ msg: 'Advert not found!' });
+        if (!advert) return res.status(404).json({ message: 'Advert not found!' });
 
         const updatedAdvert = await Advert.findByIdAndUpdate(req.params.id, { advert_image: '' }, { new: true });
         res.status(200).json(updatedAdvert);

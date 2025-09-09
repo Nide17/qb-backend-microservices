@@ -6,7 +6,7 @@ const { sendEmail } = require("../utils/emails/sendEmail")
 const findSubscribedUserById = async (id, res, selectFields = '') => {
     try {
         const subscribedUser = await SubscribedUser.findById(id).select(selectFields);
-        if (!subscribedUser) return res.status(404).json({ msg: 'No subscribed user found!' });
+        if (!subscribedUser) return res.status(404).json({ message: 'No subscribed user found!' });
         return subscribedUser;
     } catch (err) {
         return handleError(res, err);
@@ -26,7 +26,7 @@ const validateRequestBody = (body, requiredFields) => {
 // Helper function to send subscription email
 const sendSubscriptionEmail = (subscriber) => {
     const clientURL = process.env.NODE_ENV === 'production' ?
-        'https://quizblog.rw' : 'http://localhost:5173';
+        process.env.DOMAIN_URL : process.env.LOCAL_DOMAIN_URL;
 
     sendEmail(
         subscriber.email,
@@ -42,7 +42,7 @@ const sendSubscriptionEmail = (subscriber) => {
 exports.getSubscribedUsers = async (req, res) => {
     try {
         const subscribedUsers = await SubscribedUser.find().sort({ createdAt: -1 });
-        if (!subscribedUsers) return res.status(404).json({ msg: 'No subscribed users found!' });
+        if (!subscribedUsers) return res.status(204).json({ message: 'No subscribed users found!' });
         res.status(200).json(subscribedUsers);
     } catch (err) {
         handleError(res, err);
@@ -59,19 +59,19 @@ exports.createSubscribedUser = async (req, res) => {
 
     const validationError = validateRequestBody(req.body, ['name', 'email']);
     if (validationError) {
-        return res.status(400).json({ msg: validationError });
+        return res.status(400).json({ message: validationError });
     }
 
     try {
         const subscriber = await SubscribedUser.findOne({ email });
         if (subscriber) {
-            return res.status(400).json({ msg: 'You are already subscribed!' });
+            return res.status(400).json({ message: 'You are already subscribed!' });
         }
 
         const newSubscriber = new SubscribedUser({ name, email });
         const savedSubscriber = await newSubscriber.save();
         if (!savedSubscriber) {
-            return res.status(400).json({ msg: 'Failed to subscribe!' });
+            return res.status(400).json({ message: 'Failed to subscribe!' });
         }
 
         // Sending e-mail to subscribed user
@@ -101,9 +101,9 @@ exports.deleteSubscribedUser = async (req, res) => {
         if (!subscribedUser) return;
 
         const removedSubscribedUser = await SubscribedUser.deleteOne({ _id: req.params.id });
-        if (removedSubscribedUser.deletedCount === 0) throw Error('Something went wrong while deleting!');
+        if (removedSubscribedUser.deletedCount === 0) return res.status(500).json({ message: 'Could not delete subscribed user, try again!' });
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

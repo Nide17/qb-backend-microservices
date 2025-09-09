@@ -1,147 +1,90 @@
 const express = require('express');
 const http = require('http');
-const socketIo = require('socket.io');
 const axios = require('axios');
-// const morgan = require('morgan');
 const cors = require('cors');
-const RedisCacheManager = require('./redis-cache');
-const HealthMonitor = require('../shared-utils/health-monitor');
+const { routeToService, setCachedData, getCachedData, redisCache, memoryCache } = require('./utils/helpers');
+const HealthMonitor = require('./utils/health-monitor');
+const socketManager = require('./utils/enhanced-socket');
 require('dotenv').config();
 
 const app = express();
 const server = http.createServer(app);
-const io = socketIo(server, {
-    cors: {
-        origin: process.env.CLIENT_URL || "http://localhost:3000",
-        methods: ["GET", "POST"],
-        credentials: true
-    },
-    transports: ['websocket', 'polling']
-});
+const io = socketManager.initialize(server);
 
 app.use(express.json());
-// app.use(morgan('combined'));
 app.use(cors());
 
-// Initialize Redis cache manager
-const redisCache = new RedisCacheManager();
+// Users Service
+app.use('/api/users', routeToService('Users', process.env.USERS_SERVICE_URL));
+app.use('/api/users/admins-emails', routeToService('Users', process.env.USERS_SERVICE_URL));
+app.use('/api/subscribed-users', routeToService('Users', process.env.USERS_SERVICE_URL));
 
-// Initialize health monitor
-const healthMonitor = new HealthMonitor();
+// Quizzing Service
+app.use('/api/categories', routeToService('Quizzing', process.env.QUIZZING_SERVICE_URL));
+app.use('/api/quizzes', routeToService('Quizzing', process.env.QUIZZING_SERVICE_URL));
+app.use('/api/questions', routeToService('Quizzing', process.env.QUIZZING_SERVICE_URL));
 
-// In-memory cache as fallback
-const memoryCache = new Map();
-const MEMORY_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+// Posts Service
+app.use('/api/adverts', routeToService('Posts', process.env.POSTS_SERVICE_URL));
+app.use('/api/faqs', routeToService('Posts', process.env.POSTS_SERVICE_URL));
+app.use('/api/blog-posts', routeToService('Posts', process.env.POSTS_SERVICE_URL));
+app.use('/api/post-categories', routeToService('Posts', process.env.POSTS_SERVICE_URL));
+app.use('/api/image-uploads', routeToService('Posts', process.env.POSTS_SERVICE_URL));
+app.use('/api/blog-posts-views', routeToService('Posts', process.env.POSTS_SERVICE_URL));
 
-// Add health monitoring middleware
-app.use(healthMonitor.middleware());
+// Schools Service
+app.use('/api/schools', routeToService('Schools', process.env.SCHOOLS_SERVICE_URL));
+app.use('/api/levels', routeToService('Schools', process.env.SCHOOLS_SERVICE_URL));
+app.use('/api/faculties', routeToService('Schools', process.env.SCHOOLS_SERVICE_URL));
 
-// Enhanced cache functions with Redis fallback
-const getCachedData = async (key) => {
-    try {
-        // Try Redis first
-        if (redisCache.isConnected) {
-            const cached = await redisCache.get(key);
-            if (cached) {
-                console.log(`📦 Redis cache hit: ${key}`);
-                return cached;
-            }
+// Courses Service
+app.use('/api/course-categories', routeToService('Courses', process.env.COURSES_SERVICE_URL));
+app.use('/api/courses', routeToService('Courses', process.env.COURSES_SERVICE_URL));
+app.use('/api/chapters', routeToService('Courses', process.env.COURSES_SERVICE_URL));
+app.use('/api/notes', routeToService('Courses', process.env.COURSES_SERVICE_URL));
+
+// Scores Service
+app.use('/api/scores', routeToService('Scores', process.env.SCORES_SERVICE_URL));
+
+// Downloads Service
+app.use('/api/downloads', routeToService('Downloads', process.env.DOWNLOADS_SERVICE_URL));
+
+// Contacts Service
+app.use('/api/contacts', routeToService('Contacts', process.env.CONTACTS_SERVICE_URL));
+app.use('/api/broadcasts', routeToService('Contacts', process.env.CONTACTS_SERVICE_URL));
+app.use('/api/chat-rooms', routeToService('Contacts', process.env.CONTACTS_SERVICE_URL));
+app.use('/api/room-messages', routeToService('Contacts', process.env.CONTACTS_SERVICE_URL));
+
+// Feedbacks Service
+app.use('/api/feedbacks', routeToService('Feedbacks', process.env.FEEDBACKS_SERVICE_URL));
+
+// Comments Service
+app.use('/api/quizzes-comments', routeToService('Comments', process.env.COMMENTS_SERVICE_URL));
+app.use('/api/questions-comments', routeToService('Comments', process.env.COMMENTS_SERVICE_URL));
+
+// Statistics Service
+app.use('/api/statistics', routeToService('Statistics', process.env.STATISTICS_SERVICE_URL));
+
+// Health Check Endpoint
+app.get('/', (req, res) => {
+    res.send({
+        status: 'API Gateway is running',
+        version: '2.0.0',
+        features: ['data-aggregation', 'caching', 'health-monitoring'],
+        endpoints: {
+            aggregated: [
+                '/api/aggregated/quiz/:id',
+                '/api/aggregated/quizzes',
+                '/api/aggregated/dashboard',
+                '/api/aggregated/user/:id',
+                '/api/aggregated/category/:id',
+                '/api/aggregated/search'
+            ],
+            health: '/api/health'
         }
+    });
+});
 
-        // Fallback to memory cache
-        const cached = memoryCache.get(key);
-        if (cached && Date.now() - cached.timestamp < MEMORY_CACHE_TTL) {
-            console.log(`💾 Memory cache hit: ${key}`);
-            return cached.data;
-        }
-
-        return null;
-    } catch (error) {
-        console.error('Cache get error:', error);
-        // Fallback to memory cache on error
-        const cached = memoryCache.get(key);
-        if (cached && Date.now() - cached.timestamp < MEMORY_CACHE_TTL) {
-            return cached.data;
-        }
-        return null;
-    }
-};
-
-const setCachedData = async (key, data, ttl = 300) => {
-    try {
-        // Set in Redis first
-        if (redisCache.isConnected) {
-            await redisCache.set(key, data, ttl);
-            console.log(`📦 Redis cache set: ${key} (TTL: ${ttl}s)`);
-        }
-
-        // Also set in memory cache as backup
-        memoryCache.set(key, { data, timestamp: Date.now() });
-    } catch (error) {
-        console.error('Cache set error:', error);
-        // Fallback to memory cache only
-        memoryCache.set(key, { data, timestamp: Date.now() });
-    }
-};
-
-const retryRequest = async (req, res, serviceUrl, retries = 3) => {
-    for (let i = 0; i < retries; i++) {
-        try {
-            const response = await axios({
-                method: req.method,
-                url: `${serviceUrl}${req.originalUrl}`,
-                data: req.body,
-                headers: { 'x-auth-token': req.header('x-auth-token') },
-                timeout: 10000, // 10 second timeout
-            });
-            return response;
-        } catch (error) {
-            if (i < retries - 1) {
-                if (error.code === 'ECONNREFUSED' || error.code === 'ECONNRESET' || error.code === 'ECONNABORTED') {
-                    console.log(`Retrying request to ${serviceUrl}${req.originalUrl} (${i + 1}/${retries})`);
-                    await new Promise(res => setTimeout(res, 1000 * (i + 1))); // Exponential backoff
-                } else if (error.code === 'ETIMEDOUT') {
-                    res.status(504).send({
-                        error: `Service at ${serviceUrl} [${req.originalUrl.split('/')[2]}] is taking too long to respond`
-                    });
-                    return;
-                } else {
-                    throw error;
-                }
-            } else {
-                res.status(502).send({
-                    error: `Service at ${serviceUrl} [${req.originalUrl.split('/')[2]}] is unavailable`
-                });
-                return;
-            }
-        }
-    }
-};
-
-const routeToService = (serviceUrl) => async (req, res) => {
-    try {
-        const response = await retryRequest(req, res, serviceUrl);
-        if (response) {
-            res.status(response.status).send(response.data);
-        }
-    } catch (error) {
-        if (error.code === 'ECONNREFUSED') {
-            res.status(502).send({
-                error: `Service at ${serviceUrl} [${req.originalUrl.split('/')[2]}] is unavailable`
-            });
-        } else if (error.response) {
-            res.status(error.response.status).send({
-                error: error.response.data.msg || error.response.data.error,
-                id: error.response.data?.id,
-            });
-        } else {
-            console.error('Unexpected error:', error);
-            res.status(500).send({
-                error: `Something went wrong: ${req.originalUrl.split('/')[2]}`
-            });
-        }
-    }
-};
 
 // Enhanced Data Aggregation Endpoints
 app.get('/api/aggregated/quiz/:id', async (req, res) => {
@@ -182,7 +125,7 @@ app.get('/api/aggregated/quiz/:id', async (req, res) => {
         await setCachedData(cacheKey, aggregatedData);
         res.json(aggregatedData);
     } catch (error) {
-        console.error('Error aggregating quiz data:', error);
+        console.error('Error aggregating quiz data:\n', error);
         res.status(500).json({ error: 'Failed to aggregate quiz data' });
     }
 });
@@ -241,7 +184,7 @@ app.get('/api/aggregated/quizzes', async (req, res) => {
         await setCachedData(cacheKey, aggregatedData);
         res.json(aggregatedData);
     } catch (error) {
-        console.error('Error aggregating quizzes data:', error);
+        console.error('Error aggregating quizzes data:\n', error);
         res.status(500).json({ error: 'Failed to aggregate quizzes data' });
     }
 });
@@ -279,7 +222,7 @@ app.get('/api/aggregated/dashboard', async (req, res) => {
         await setCachedData(cacheKey, dashboardData);
         res.json(dashboardData);
     } catch (error) {
-        console.error('Error aggregating dashboard data:', error);
+        console.error('Error aggregating dashboard data:\n', error);
         res.status(500).json({ error: 'Failed to aggregate dashboard data' });
     }
 });
@@ -325,7 +268,7 @@ app.get('/api/aggregated/user/:id', async (req, res) => {
         await setCachedData(cacheKey, aggregatedData);
         res.json(aggregatedData);
     } catch (error) {
-        console.error('Error aggregating user data:', error);
+        console.error('Error aggregating user data:\n', error);
         res.status(500).json({ error: 'Failed to aggregate user data' });
     }
 });
@@ -370,7 +313,7 @@ app.get('/api/aggregated/category/:id', async (req, res) => {
         await setCachedData(cacheKey, aggregatedData);
         res.json(aggregatedData);
     } catch (error) {
-        console.error('Error aggregating category data:', error);
+        console.error('Error aggregating category data:\n', error);
         res.status(500).json({ error: 'Failed to aggregate category data' });
     }
 });
@@ -425,7 +368,7 @@ app.get('/api/aggregated/search', async (req, res) => {
         await setCachedData(cacheKey, aggregatedData);
         res.json(aggregatedData);
     } catch (error) {
-        console.error('Error performing search:', error);
+        console.error('Error performing search:\n', error);
         res.status(500).json({ error: 'Failed to perform search' });
     }
 });
@@ -446,6 +389,7 @@ app.get('/api/health', async (req, res) => {
         'Statistics': process.env.STATISTICS_SERVICE_URL
     };
 
+    const healthMonitor = new HealthMonitor();
     const healthReport = await healthMonitor.getHealthReport(services);
     
     // Add cache information
@@ -475,125 +419,41 @@ app.get('/api/metrics', (req, res) => {
     });
 });
 
-// Users Service
-app.use('/api/users', routeToService(process.env.USERS_SERVICE_URL));
-app.use('/api/subscribed-users', routeToService(process.env.USERS_SERVICE_URL));
-
-// Quizzing Service
-app.use('/api/categories', routeToService(process.env.QUIZZING_SERVICE_URL));
-app.use('/api/quizzes', routeToService(process.env.QUIZZING_SERVICE_URL));
-app.use('/api/questions', routeToService(process.env.QUIZZING_SERVICE_URL));
-
-// Posts Service
-app.use('/api/adverts', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/faqs', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/blog-posts', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/post-categories', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/image-uploads', routeToService(process.env.POSTS_SERVICE_URL));
-app.use('/api/blog-posts-views', routeToService(process.env.POSTS_SERVICE_URL));
-
-// Schools Service
-app.use('/api/schools', routeToService(process.env.SCHOOLS_SERVICE_URL));
-app.use('/api/levels', routeToService(process.env.SCHOOLS_SERVICE_URL));
-app.use('/api/faculties', routeToService(process.env.SCHOOLS_SERVICE_URL));
-
-// Courses Service
-app.use('/api/course-categories', routeToService(process.env.COURSES_SERVICE_URL));
-app.use('/api/courses', routeToService(process.env.COURSES_SERVICE_URL));
-app.use('/api/chapters', routeToService(process.env.COURSES_SERVICE_URL));
-app.use('/api/notes', routeToService(process.env.COURSES_SERVICE_URL));
-
-// Scores Service
-app.use('/api/scores', routeToService(process.env.SCORES_SERVICE_URL));
-
-// Downloads Service
-app.use('/api/downloads', routeToService(process.env.DOWNLOADS_SERVICE_URL));
-
-// Contacts Service
-app.use('/api/contacts', routeToService(process.env.CONTACTS_SERVICE_URL));
-app.use('/api/broadcasts', routeToService(process.env.CONTACTS_SERVICE_URL));
-app.use('/api/chat-rooms', routeToService(process.env.CONTACTS_SERVICE_URL));
-app.use('/api/room-messages', routeToService(process.env.CONTACTS_SERVICE_URL));
-
-// Feedbacks Service
-app.use('/api/feedbacks', routeToService(process.env.FEEDBACKS_SERVICE_URL));
-
-// Comments Service
-app.use('/api/quizzes-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
-app.use('/api/questions-comments', routeToService(process.env.COMMENTS_SERVICE_URL));
-
-// Statistics Service
-app.use('/api/statistics', routeToService(process.env.STATISTICS_SERVICE_URL));
-
-// Health Check Endpoint
-app.get('/', (req, res) => {
-    res.send({
-        status: 'API Gateway is running',
-        version: '2.0.0',
-        features: ['data-aggregation', 'caching', 'health-monitoring'],
-        endpoints: {
-            aggregated: [
-                '/api/aggregated/quiz/:id',
-                '/api/aggregated/quizzes',
-                '/api/aggregated/dashboard',
-                '/api/aggregated/user/:id',
-                '/api/aggregated/category/:id',
-                '/api/aggregated/search'
-            ],
-            health: '/api/health'
-        }
-    });
-});
-
 // 404 Route Not Found
 app.use((req, res, next) => {
-    res.status(404).send({ error: `Route ${req.url} not found` });
+    if (!res.headersSent) {
+        res.status(404).send({ error: `Route ${req.url} does not exist` });
+    }
 });
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
-    console.error(err.stack);
-    console.error(err);
-    res.status(err.status || 500).send({ error: err.message });
+    console.error('Global error handler:', err.stack);
+    console.error('Error details:', err);
+    
+    // Only send response if headers haven't been sent yet
+    if (!res.headersSent) {
+        res.status(err.status || 500).json({
+            success: false,
+            error: err.message || 'Internal Server Error',
+            code: 'INTERNAL_SERVER_ERROR',
+            timestamp: new Date().toISOString()
+        });
+    }
 });
 
-// Socket.io connection handling
-io.on('connection', (socket) => {
-    console.log('Client connected:', socket.id);
-    
-    // Join user-specific room for personalized updates
-    socket.on('join-user-room', (userId) => {
-        socket.join(`user-${userId}`);
-        console.log(`User ${userId} joined room user-${userId}`);
-    });
-    
-    // Join quiz room for real-time quiz features
-    socket.on('join-quiz-room', (quizId) => {
-        socket.join(`quiz-${quizId}`);
-        console.log(`Socket ${socket.id} joined quiz room quiz-${quizId}`);
-    });
-    
-    // Handle quiz progress updates
-    socket.on('quiz-progress', (data) => {
-        socket.to(`quiz-${data.quizId}`).emit('quiz-progress-update', data);
-    });
-    
-    // Handle real-time comments
-    socket.on('new-comment', (data) => {
-        io.to(`quiz-${data.quizId}`).emit('comment-added', data);
-    });
-    
-    // Handle score updates
-    socket.on('score-update', (data) => {
-        io.to(`user-${data.userId}`).emit('score-updated', data);
-        // Broadcast to dashboard if needed
-        io.emit('dashboard-stats-update', { type: 'score', data });
-    });
-    
-    socket.on('disconnect', () => {
-        console.log('Client disconnected:', socket.id);
-    });
-});
+// Socket.io connection handling is now managed by the enhanced socket manager
+// All socket events, rooms, and features are handled automatically
+// The socket manager provides improved real-time features including:
+// - User presence and online status
+// - Private messaging
+// - Room-based chat with typing indicators
+// - Real-time quiz sessions with leaderboards
+// - Connection management and error handling
+// - Performance monitoring and statistics
+
+console.log('🔌 Enhanced Socket.IO manager initialized');
+console.log('✨ Features: Real-time chat, quiz sessions, user presence, private messaging');
 
 // Middleware to attach socket.io to requests
 app.use((req, res, next) => {
@@ -616,7 +476,7 @@ async function startServer() {
             console.log(`📦 Redis cache: ${redisCache.isConnected ? 'Connected' : 'Disconnected'}`);
         });
     } catch (error) {
-        console.error('Failed to start server:', error);
+        console.error('Failed to start server:\n', error);
         process.exit(1);
     }
 }

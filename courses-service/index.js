@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const { createServer } = require("http");
+const { notFoundHandler, globalErrorHandler } = require('./utils/error')
 const dotenv = require('dotenv')
 
 // Config
@@ -12,7 +13,7 @@ const httpServer = createServer(app)
 // Utils
 const allowList = [
     'http://localhost:5173',
-    'http://localhost:4000',
+    'http://localhost:3000',
     'http://localhost:5005',
 ]
 
@@ -44,14 +45,32 @@ app.use("/api/notes", require('./routes/notes'))
 // home route
 app.get('/', (req, res) => { res.send('Welcome to QB courses API') })
 
-// Error handling middleware
-app.use((err, req, res, next) => {
-    if (err) {
-        res.status(500).json({ error: err.message });
-    } else {
-        next();
+// Health check endpoint
+app.get('/health', async (req, res) => {
+    try {
+        const dbStatus = mongoose.connection.readyState === 1;
+        res.json({
+            service: 'courses-service',
+            status: 'healthy',
+            database: dbStatus ? 'connected' : 'disconnected',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    } catch (error) {
+        res.status(503).json({
+            service: 'courses-service',
+            status: 'unhealthy',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
     }
 });
+
+// Handle 404 errors
+app.use(notFoundHandler())
+
+// Global error handler
+app.use(globalErrorHandler())
 
 mongoose
     .connect(process.env.MONGODB_URI)

@@ -4,13 +4,13 @@ FROM node:18-alpine
 WORKDIR /app
 
 # Copy package files
-COPY package*.json ./
+COPY courses-service/package*.json ./
 
 # Install dependencies
 RUN npm ci --only=production
 
 # Copy source code
-COPY . .
+COPY courses-service/ .
 
 # Create non-root user
 RUN addgroup -g 1001 -S nodejs

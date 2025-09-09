@@ -1,7 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
 const slugify = require("slugify")
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
 
 //initialize Mongo schema
 const Schema = mongoose.Schema
@@ -72,43 +71,5 @@ QuizSchema.pre("validate", function (next) {
   }
   next()
 })
-
-QuizSchema.methods.populateCreatedBy = async function () {
-  const axios = require('axios');
-  let quiz = this;
-
-  let user = null;
-  if (quiz.created_by) {
-    try {
-      user = await axios.get(`${API_GATEWAY_URL}/api/users/${quiz.created_by}`);
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      user = null;
-    }
-  }
-  
-  quiz = quiz.toObject();
-  quiz.created_by = user ? { _id: user.data._id, name: user.data.name } : null;
-  return quiz;
-}
-
-QuizSchema.methods.populateLastUpdatedBy = async function () {
-  const axios = require('axios');
-  let quiz = this;
-
-  let user = null;
-  if (quiz.last_updated_by) {
-    try {
-      user = await axios.get(`${API_GATEWAY_URL}/api/users/${quiz.last_updated_by}`);
-    } catch (error) {
-      console.error('Error fetching user:', error);
-      user = null;
-    }
-  }
-  
-  quiz = quiz.toObject();
-  quiz.last_updated_by = user ? { _id: user.data._id, name: user.data.name } : null;
-  return quiz;
-}
 
 module.exports = mongoose.model("Quiz", QuizSchema);

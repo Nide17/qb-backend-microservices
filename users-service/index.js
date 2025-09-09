@@ -2,6 +2,7 @@ const express = require('express')
 const mongoose = require('mongoose')
 const cors = require('cors')
 const dotenv = require('dotenv')
+const { notFoundHandler, globalErrorHandler } = require('./utils/error')
 
 // Config
 dotenv.config()
@@ -42,6 +43,7 @@ function buildMongoConfig(defaultDb) {
 // Utils
 const allowList = [
     'http://localhost:5173',
+    'http://localhost:3000',
     'http://localhost:4000',
     'http://localhost:5001',
 ]
@@ -72,19 +74,35 @@ app.use("/api/subscribed-users", require('./routes/subscribed-users'))
 // Home route
 app.get('/', (req, res) => res.send('Welcome to QB users API'))
 
+// Health check endpoint
+app.get('/health', async (req, res) => {
+    try {
+        const dbStatus = mongoose.connection.readyState === 1;
+        res.json({
+            service: 'users-service',
+            status: 'healthy',
+            database: dbStatus ? 'connected' : 'disconnected',
+            timestamp: new Date().toISOString(),
+            uptime: process.uptime()
+        });
+    } catch (error) {
+        res.status(503).json({
+            service: 'users-service',
+            status: 'unhealthy',
+            error: error.message,
+            timestamp: new Date().toISOString()
+        });
+    }
+});
+
 // Handle 404 errors
-app.use((req, res, next) => {
-    res.status(404).send('Route not found')
-})
+app.use(notFoundHandler())
 
 // Global error handler
-app.use((err, req, res, next) => {
-    console.error(err.stack)
-    res.status(500).send('Something broke!')
-})
+app.use(globalErrorHandler())
 
 mongoose
-    .connect(buildMongoConfig('users').uri, buildMongoConfig('users').options)
+    .connect(buildMongoConfig('users-service').uri, buildMongoConfig('users-service').options)
     .then(() => {
         app.listen(process.env.PORT || 5001, () => {
             console.log(`Users service is running on port ${process.env.PORT || 5001}, and MongoDB is connected`)

@@ -1,22 +1,32 @@
 const QuizComment = require("../models/QuizComment");
-const axios = require('axios');
+const axios = require("axios");
 const { handleError } = require('../utils/error');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL;
+const QUIZZING_SERVICE_URL = process.env.QUIZZING_SERVICE_URL;
 
 // Helper function to populate sender and quiz fields
 const populateSenderAndQuiz = async (quizComment) => {
     try {
-        const sender = quizComment.sender ? await axios.get(`${API_GATEWAY_URL}/api/users/${quizComment.sender}`) : null;
-        const quiz = quizComment.quiz ? await axios.get(`${API_GATEWAY_URL}/api/quizzes/${quizComment.quiz}`) : null;
+        const fetchPromises = [
+            quizComment.sender ? axios.get(`${USERS_SERVICE_URL}/api/users/${quizComment.sender}`, { 
+                headers: { 'x-internal-service': 'true' }
+            }) : Promise.resolve(null),
+            quizComment.quiz ? axios.get(`${QUIZZING_SERVICE_URL}/api/quizzes/${quizComment.quiz}`, { 
+                headers: { 'x-internal-service': 'true' }
+            }) : Promise.resolve(null)
+        ];
+
+        const [senderResult, quizResult] = await Promise.allSettled(fetchPromises);
 
         quizComment = quizComment.toObject();
-        quizComment.sender = sender ? sender.data : null;
-        quizComment.quiz = quiz ? quiz.data : null;
+        quizComment.sender = senderResult.status === 'fulfilled' && senderResult.value ? senderResult.value.data : null;
+        quizComment.quiz = quizResult.status === 'fulfilled' && quizResult.value ? quizResult.value.data : null;
 
         return quizComment;
     } catch (error) {
-        // console.error('Error fetching sender and quiz:', error);
-        return quizComment;
+        console.log('Error in populateSenderAndQuiz:', error.message);
+        return quizComment.toObject ? quizComment.toObject() : quizComment;
     }
 };
 
@@ -24,7 +34,7 @@ const populateSenderAndQuiz = async (quizComment) => {
 const findQuizCommentById = async (id, res, selectFields = '') => {
     try {
         let quizComment = await QuizComment.findById(id).select(selectFields);
-        if (!quizComment) return res.status(404).json({ msg: 'No quizComment found!' });
+        if (!quizComment) return res.status(404).json({ message: 'No quizComment found!' });
 
         quizComment = await populateSenderAndQuiz(quizComment);
 
@@ -38,7 +48,7 @@ const findQuizCommentById = async (id, res, selectFields = '') => {
 const validateRequiredFields = (fields, res) => {
     for (const field of fields) {
         if (!field.value) {
-            res.status(400).json({ msg: `Please fill required field: ${field.name}` });
+            res.status(400).json({ message: `Please fill required field: ${field.name}` });
             return false;
         }
     }
@@ -87,7 +97,12 @@ exports.createQuizComment = async (req, res) => {
     try {
         const newQuizComment = new QuizComment({ comment, quiz, sender });
         const savedQuizComment = await newQuizComment.save();
-        if (!savedQuizComment) throw Error('Something went wrong during creation!');
+        if (!savedQuizComment) {
+            return res.status(500).json({
+                success: false,
+                message: 'Something went wrong during creation!'
+            });
+        }
 
         res.status(200).json({
             _id: savedQuizComment._id,
@@ -103,7 +118,7 @@ exports.createQuizComment = async (req, res) => {
 exports.updateQuizComment = async (req, res) => {
     try {
         const quizComment = await QuizComment.findById(req.params.id);
-        if (!quizComment) return res.status(404).json({ msg: 'QuizComment not found!' });
+        if (!quizComment) return res.status(404).json({ message: 'QuizComment not found!' });
 
         const updatedQuizComment = await QuizComment.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedQuizComment);
@@ -115,12 +130,22 @@ exports.updateQuizComment = async (req, res) => {
 exports.deleteQuizComment = async (req, res) => {
     try {
         const quizComment = await QuizComment.findById(req.params.id);
-        if (!quizComment) throw Error('QuizComment not found!');
+        if (!quizComment) {
+            return res.status(404).json({
+                success: false,
+                message: 'QuizComment not found!'
+            });
+        }
 
         const removedQuizComment = await QuizComment.deleteOne({ _id: req.params.id });
-        if (removedQuizComment.deletedCount === 0) throw Error('Something went wrong while deleting!');
+        if (removedQuizComment.deletedCount === 0) {
+            return res.status(500).json({
+                success: false,
+                message: 'Something went wrong while deleting!'
+            });
+        }
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

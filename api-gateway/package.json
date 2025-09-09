@@ -29,7 +29,7 @@
     "statistics": "cd ../statistics-service && npm start",
     "dev-statistics": "cd ../statistics-service && npm run statistics",
     "start-all": "concurrently \"npm start\" \"npm run users\" \"npm run quizzing\" \"npm run posts\" \"npm run schools\" \"npm run courses\" \"npm run scores\" \"npm run downloads\" \"npm run contacts\" \"npm run feedbacks\" \"npm run comments\" \"npm run statistics\"",
-    "dev-all": "concurrently \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-schools\" \"npm run dev-courses\" \"npm run dev-scores\" \"npm run dev-downloads\" \"npm run dev-contacts\" \"npm run dev-feedbacks\" \"npm run dev-comments\" \"npm run dev-statistics\""
+    "dev-all": "concurrently \"docker compose up -d mongodb redis\" \"npm run dev\" \"npm run dev-users\" \"npm run dev-quizzing\" \"npm run dev-posts\" \"npm run dev-schools\" \"npm run dev-courses\" \"npm run dev-scores\" \"npm run dev-downloads\" \"npm run dev-contacts\" \"npm run dev-feedbacks\" \"npm run dev-comments\" \"npm run dev-statistics\""
   },
   "author": "Niyomwungeri Parmenide Ishimwe",
   "license": "MIT",
@@ -39,6 +39,7 @@
     "dotenv": "^16.4.5",
     "express": "^4.21.1",
     "ioredis": "^5.3.2",
+    "jsonwebtoken": "^9.0.2",
     "morgan": "^1.10.0",
     "socket.io": "^4.8.1"
   },

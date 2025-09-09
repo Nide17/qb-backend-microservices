@@ -2,13 +2,14 @@ const axios = require('axios');
 const Broadcast = require("../models/Broadcast");
 const { sendEmail } = require("../utils/emails/sendEmail");
 const { handleError } = require('../utils/error');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL
 
 // Helper function to find broadcast by ID
 const findBroadcastById = async (id, res, selectFields = '') => {
     try {
         const broadcast = await Broadcast.findById(id).select(selectFields);
-        if (!broadcast) return res.status(404).json({ msg: 'No broadcast found!' });
+        if (!broadcast) return res.status(404).json({ message: 'No broadcast found!' });
         return broadcast;
     } catch (err) {
         return handleError(res, err);
@@ -58,7 +59,7 @@ exports.getOneBroadcast = async (req, res) => {
 
     let sent_by = null;
     if (broadcast.sent_by) {
-        sent_by = await fetchData(`${API_GATEWAY_URL}/api/users/${broadcast.sent_by}`, res);
+        sent_by = await fetchData(`${USERS_SERVICE_URL}/api/users/${broadcast.sent_by}`, res);
     }
     res.status(200).json({ ...broadcast._doc, sent_by });
 };
@@ -67,7 +68,7 @@ exports.createBroadcast = async (req, res) => {
     const { title, sent_by, message } = req.body;
 
     if (!title || !sent_by || !message) {
-        return res.status(400).json({ msg: 'Please fill required fields' });
+        return res.status(400).json({ message: 'Please fill required fields' });
     }
 
     const clientURL = process.env.NODE_ENV === 'production' ? 'https://quizblog.rw' : 'http://localhost:5173';
@@ -77,8 +78,8 @@ exports.createBroadcast = async (req, res) => {
         const savedBroadcast = await newBroadcast.save();
         if (!savedBroadcast) throw Error('Something went wrong during creation!');
 
-        const subscribers = await fetchData(`${API_GATEWAY_URL}/api/subscribed-users`, res);
-        const allUsers = await fetchData(`${API_GATEWAY_URL}/api/users`, res);
+        const subscribers = await fetchData(`${USERS_SERVICE_URL}/api/subscribed-users`, res);
+        const allUsers = await fetchData(`${USERS_SERVICE_URL}/api/users`, res);
 
         sendEmails(subscribers, title, message, clientURL);
         sendEmails(allUsers, title, message, clientURL);

@@ -5,7 +5,7 @@ const { handleError } = require('../utils/error');
 const findCategoryById = async (id, res, selectFields = '') => {
     try {
         let category = await Category.findById(id).select(selectFields).populate('quizes');
-        if (!category) return res.status(404).json({ msg: 'No category found!' });
+        if (!category) return res.status(404).json({ message: 'No category found!' });
 
         if (category.courseCategory) {
             category = await category.populateCourseCategory();
@@ -34,7 +34,7 @@ const checkCategoryExists = async (title) => {
 exports.getCategories = async (req, res) => {
     try {
         let categories = await Category.find().sort({ createdAt: -1 }).populate('quizes');
-        if (!categories) return res.status(404).json({ msg: 'No categories found!' });
+        if (!categories) return res.status(204).json({ message: 'No categories found!' });
 
         categories = await Promise.all(categories.map(async (category) => await category.populateCourseCategory()));
         res.status(200).json(categories);
@@ -83,7 +83,7 @@ exports.deleteCategory = async (req, res) => {
         const removedCategory = await Category.deleteOne({ _id: req.params.id });
         if (removedCategory.deletedCount === 0) throw new Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

@@ -1,13 +1,13 @@
 const axios = require('axios');
 const RoomMessage = require("../models/RoomMessage");
 const { handleError } = require('../utils/error');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL;
 
 // Helper function to find roomMessage by ID
 const findRoomMessageById = async (id, res, selectFields = '') => {
     try {
         const roomMessage = await RoomMessage.findById(id).select(selectFields);
-        if (!roomMessage) return res.status(404).json({ msg: 'No roomMessage found!' });
+        if (!roomMessage) return res.status(404).json({ message: 'No roomMessage found!' });
         return roomMessage;
     } catch (err) {
         return handleError(res, err);
@@ -26,18 +26,44 @@ exports.getRoomMessages = async (req, res) => {
     try {
         let roomMessages = await RoomMessage.find().sort({ createdAt: -1 });
 
-        for (const roomMessage of roomMessages) {
+        // Helper function to safely fetch user data
+        const fetchUser = async (userId, context) => {
             try {
-                const senderResponse = roomMessage.sender ? await axios.get(`${API_GATEWAY_URL}/api/users/${roomMessage.sender}`) : null;
-                const receiverResponse = roomMessage.receiver ? await axios.get(`${API_GATEWAY_URL}/api/users/${roomMessage.receiver}`) : null;
-                roomMessage.sender = senderResponse ? senderResponse.data : null;
-                roomMessage.receiver = receiverResponse ? receiverResponse.data : null;
-            } catch (fetchError) {
-                console.error('Error fetching user data:', fetchError);
-                roomMessage.sender = null;
-                roomMessage.receiver = null;
+                if (!userId) return null;
+                const response = await axios.get(`${USERS_SERVICE_URL}/api/users/${userId}`);
+                return response.data;
+            } catch (error) {
+                console.warn(`Failed to fetch ${context} user ${userId}:`, error.message);
+                return null;
             }
+        };
+
+        // Use Promise.allSettled for resilient concurrent fetching
+        const userPromises = roomMessages.flatMap(roomMessage => [
+            { 
+                message: roomMessage, 
+                type: 'sender', 
+                promise: fetchUser(roomMessage.sender, 'sender')
+            },
+            { 
+                message: roomMessage, 
+                type: 'receiver', 
+                promise: fetchUser(roomMessage.receiver, 'receiver')
+            }
+        ]);
+
+        const userResults = await Promise.allSettled(userPromises.map(item => item.promise));
+
+        // Apply results back to messages
+        let resultIndex = 0;
+        for (const roomMessage of roomMessages) {
+            const senderResult = userResults[resultIndex++];
+            const receiverResult = userResults[resultIndex++];
+            
+            roomMessage.sender = senderResult.status === 'fulfilled' ? senderResult.value : null;
+            roomMessage.receiver = receiverResult.status === 'fulfilled' ? receiverResult.value : null;
         }
+
         res.status(200).json(roomMessages);
     } catch (err) {
         handleError(res, err);
@@ -71,7 +97,12 @@ exports.createRoomMessage = async (req, res) => {
         });
 
         const savedMessage = await newRoomMessage.save();
-        if (!savedMessage) throw Error('Something went wrong during creation!');
+        if (!savedMessage) {
+            return res.status(500).json({
+                success: false,
+                message: 'Something went wrong during creation!'
+            });
+        }
 
         res.status(200).json({
             _id: savedMessage._id,
@@ -95,7 +126,7 @@ exports.deleteRoomMessage = async (req, res) => {
         const deletedRoomMessage = await RoomMessage.findByIdAndDelete(req.params.id);
         if (!deletedRoomMessage) throw new Error('Something went wrong during deletion!');
 
-        res.status(200).json({ msg: 'RoomMessage deleted successfully!' });
+        res.status(200).json({ message: 'RoomMessage deleted successfully!' });
     } catch (err) {
         handleError(res, err);
     }

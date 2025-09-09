@@ -1,9 +1,6 @@
 // Bring in Mongo
 const mongoose = require('mongoose')
-const slugify = require("slugify")
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
-
-//initialize Mongo schema
+const slugify = require("slugify")//initialize Mongo schema
 const Schema = mongoose.Schema;
 
 //create a schema object
@@ -46,23 +43,5 @@ CategorySchema.pre("validate", function (next) {
   }
   next()
 })
-
-CategorySchema.methods.populateCourseCategory = async function () {
-  const axios = require('axios');
-  let category = this;
-  let courseCategory = null;
-
-  if (category.courseCategory) {
-    try {
-      courseCategory = await axios.get(`${API_GATEWAY_URL}/api/course-categories/${category.courseCategory}`);
-    } catch (error) {
-      courseCategory = null;
-    }
-  }
-
-  category = category.toObject();
-  category.courseCategory = courseCategory && courseCategory.data && { _id: courseCategory.data._id, title: courseCategory.data.title };
-  return category;
-};
 
 module.exports = mongoose.model("Category", CategorySchema);

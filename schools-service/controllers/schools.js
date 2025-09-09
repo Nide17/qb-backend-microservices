@@ -7,7 +7,7 @@ const { handleError } = require('../utils/error');
 const findSchoolById = async (id, res, selectFields = '') => {
     try {
         const school = await School.findById(id).select(selectFields);
-        if (!school) return res.status(404).json({ msg: 'No school found!' });
+        if (!school) return res.status(404).json({ message: 'No school found!' });
         return school;
     } catch (err) {
         return handleError(res, err);
@@ -85,7 +85,7 @@ exports.deleteSchool = async (req, res) => {
         const removedSchool = await School.deleteOne({ _id: req.params.id });
         if (!removedSchool) throw new Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: `${schoolToDelete.title} is Deleted!` });
+        res.status(200).json({ message: `${schoolToDelete.title} is Deleted!` });
     } catch (err) {
         handleError(res, err);
     }

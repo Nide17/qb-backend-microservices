@@ -17,7 +17,7 @@ scheduledReportMessage();
 const findBlogPostsViewById = async (id, res, selectFields = '') => {
     try {
         let blogPostsView = await BlogPostsView.findById(id).select(selectFields);
-        if (!blogPostsView) return res.status(404).json({ msg: 'No blogPostsView found!' });
+        if (!blogPostsView) return res.status(404).json({ message: 'No blogPostsView found!' });
 
         blogPostsView = await blogPostsView.populateViewer();
         return blogPostsView;
@@ -29,7 +29,7 @@ const findBlogPostsViewById = async (id, res, selectFields = '') => {
 exports.getBlogPostsViews = async (req, res) => {
     try {
         let blogPostsViews = await BlogPostsView.find().sort({ createdAt: -1 });
-        if (!blogPostsViews) return res.status(404).json({ msg: 'No blogPostsViews found!' });
+        if (!blogPostsViews) return res.status(204).json({ message: 'No blogPostsViews found!' });
 
         blogPostsViews = await Promise.all(blogPostsViews.map(async (post) => await post.populateViewer()));
         res.status(200).json(blogPostsViews);
@@ -46,7 +46,7 @@ exports.getOneBlogPostsView = async (req, res) => {
 exports.getRecentTenViews = async (req, res) => {
     try {
         let blogPostsViews = await BlogPostsView.find({ postCategory: req.params.id }).sort({ createdAt: -1 }).limit(10);
-        if (!blogPostsViews) return res.status(404).json({ msg: 'No blogPostsViews found!' });
+        if (!blogPostsViews) return res.status(404).json({ message: 'No blogPostsViews found!' });
 
         blogPostsViews = await Promise.all(blogPostsViews.map(async (post) => await post.populateViewer()));
         res.status(200).json(blogPostsViews);
@@ -59,7 +59,7 @@ exports.createBlogPostsView = async (req, res) => {
     const { blogPost, viewer, device, country } = req.body;
 
     if (!blogPost) {
-        return res.status(400).json({ msg: 'Blog post does not exist.' });
+        return res.status(400).json({ message: 'Blog post does not exist.' });
     }
 
     try {
@@ -84,7 +84,7 @@ exports.createBlogPostsView = async (req, res) => {
 exports.updateBlogPostsView = async (req, res) => {
     try {
         let blogPostsView = await BlogPostsView.findById(req.params.id);
-        if (!blogPostsView) return res.status(404).json({ msg: 'BlogPostsView not found!' });
+        if (!blogPostsView) return res.status(404).json({ message: 'BlogPostsView not found!' });
 
         const updatedBlogPostsView = await BlogPostsView.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedBlogPostsView);
@@ -110,7 +110,7 @@ exports.deleteBlogPostsView = async (req, res) => {
             } catch (err) {
                 console.log('ERROR in file Deleting: ' + JSON.stringify(err));
                 return res.status(400).json({
-                    msg: 'Failed to delete! ' + err.message,
+                    message: 'Failed to delete! ' + err.message,
                     success: false
                 });
             }
@@ -120,7 +120,7 @@ exports.deleteBlogPostsView = async (req, res) => {
 
         if (!removedBlogPost) throw Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: 'Deleted successfully!' });
+        res.status(200).json({ message: 'Deleted successfully!' });
     } catch (err) {
         handleError(res, err);
     }

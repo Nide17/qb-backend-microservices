@@ -2,8 +2,8 @@ const express = require('express')
 const cors = require('cors')
 const { createServer } = require("http");
 const dotenv = require('dotenv')
-// For now, use direct mongoose connection until shared-utils is properly set up
 const mongoose = require('mongoose');
+const { notFoundHandler, globalErrorHandler } = require('./utils/error')
 
 // Config
 dotenv.config()
@@ -13,7 +13,7 @@ const httpServer = createServer(app)
 // Utils
 const allowList = [
     'http://localhost:5173',
-    'http://localhost:4000',
+    'http://localhost:3000',
     'http://localhost:5002',
 ]
 
@@ -72,6 +72,12 @@ app.get('/health', async (req, res) => {
         });
     }
 });
+
+// Handle 404 errors
+app.use(notFoundHandler())
+
+// Global error handler
+app.use(globalErrorHandler())
 
 // Connect to database and start server
 async function startService() {

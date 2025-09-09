@@ -6,7 +6,7 @@ const { handleError } = require('../utils/error');
 const findLevelById = async (id, res, selectFields = '') => {
     try {
         const level = await Level.findById(id).select(selectFields).populate('school');
-        if (!level) return res.status(404).json({ msg: 'No level found!' });
+        if (!level) return res.status(404).json({ message: 'No level found!' });
         return level;
     } catch (err) {
         return handleError(res, err);
@@ -44,7 +44,7 @@ exports.createLevel = async (req, res) => {
 
     // Simple validation
     if (!title || !school) {
-        return res.status(400).json({ msg: 'Please fill all fields' });
+        return res.status(400).json({ message: 'Please fill all fields' });
     }
 
     try {
@@ -72,7 +72,7 @@ exports.createLevel = async (req, res) => {
 exports.updateLevel = async (req, res) => {
     try {
         const level = await Level.findById(req.params.id);
-        if (!level) return res.status(404).json({ msg: 'Level not found!' });
+        if (!level) return res.status(404).json({ message: 'Level not found!' });
 
         const updatedLevel = await Level.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedLevel);
@@ -98,7 +98,7 @@ exports.deleteLevel = async (req, res) => {
         if (!removedLevel)
             throw Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: `${level.title} is Deleted!` })
+        res.status(200).json({ message: `${level.title} is Deleted!` })
     } catch (err) {
         handleError(res, err);
     }

@@ -5,7 +5,7 @@ const { handleError } = require('../../utils/error');
 const findImageUploadById = async (id, res, selectFields = '') => {
     try {
         let imageUpload = await ImageUpload.findById(id).select(selectFields);
-        if (!imageUpload) return res.status(404).json({ msg: 'No imageUpload found!' });
+        if (!imageUpload) return res.status(404).json({ message: 'No imageUpload found!' });
 
         imageUpload = await imageUpload.populateOwner();
         return imageUpload;
@@ -17,7 +17,7 @@ const findImageUploadById = async (id, res, selectFields = '') => {
 exports.getImageUploads = async (req, res) => {
     try {
         let imageUploads = await ImageUpload.find().sort({ createdAt: -1 });
-        if (!imageUploads) return res.status(404).json({ msg: 'No imageUploads found!' });
+        if (!imageUploads) return res.status(204).json({ message: 'No imageUploads found!' });
 
         imageUploads = await Promise.all(imageUploads.map(async (imgUp) => await imgUp.populateOwner()));
         res.status(200).json(imageUploads);
@@ -34,7 +34,7 @@ exports.getOneImageUpload = async (req, res) => {
 exports.getImageUploadsByOwner = async (req, res) => {
     try {
         let imageUploads = await ImageUpload.find({ owner: req.params.id }).sort({ createdAt: -1 });
-        if (!imageUploads) return res.status(404).json({ msg: 'No imageUploads found!' });
+        if (!imageUploads) return res.status(404).json({ message: 'No imageUploads found!' });
 
         imageUploads = await Promise.all(imageUploads.map(async (imgUp) => await imgUp.populateOwner()));
 
@@ -49,7 +49,7 @@ exports.createImageUpload = async (req, res) => {
 
     // Simple validation
     if (!imageTitle || !owner) {
-        return res.status(400).json({ msg: 'Image title and owner are required' });
+        return res.status(400).json({ message: 'Image title and owner are required' });
     }
 
     if (!req.file) {
@@ -87,7 +87,7 @@ exports.createImageUpload = async (req, res) => {
 exports.updateImageUpload = async (req, res) => {
     try {
         const imageUpload = await ImageUpload.findById(req.params.id);
-        if (!imageUpload) return res.status(404).json({ msg: 'ImageUpload not found!' });
+        if (!imageUpload) return res.status(404).json({ message: 'ImageUpload not found!' });
 
         const updatedImageUpload = await ImageUpload.findByIdAndUpdate(req.params.id, req.body, { new: true });
         res.status(200).json(updatedImageUpload);
@@ -111,11 +111,11 @@ exports.deleteImageUpload = async (req, res) => {
             try {
                 await s3Config.deleteObject(params, (err, data) => {
                     if (err) {
-                        res.status(400).json({ msg: err.message })
+                        res.status(400).json({ message: err.message })
                         console.log(err, err.stack) // an error occurred
                     }
                     else {
-                        res.status(200).json({ msg: 'deleted!' })
+                        res.status(200).json({ message: 'deleted!' })
                         console.log(params.Key + ' deleted from ' + params.Bucket)
                     }
                 })
@@ -124,7 +124,7 @@ exports.deleteImageUpload = async (req, res) => {
             catch (err) {
                 console.log('ERROR in file Deleting : ' + JSON.stringify(err))
                 res.status(400).json({
-                    msg: 'Failed to delete! ' + err.message,
+                    message: 'Failed to delete! ' + err.message,
                     success: false
                 })
             }

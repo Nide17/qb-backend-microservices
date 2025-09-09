@@ -6,7 +6,7 @@ const findNotesById = async (id, res, selectFields = '') => {
     try {
         let notes = await Notes.findById(id).select(selectFields)
             .populate('course chapter courseCategory', 'title');
-        if (!notes) return res.status(404).json({ msg: 'No notes found!' });
+        if (!notes) return res.status(404).json({ message: 'No notes found!' });
 
         notes = await notes.populateQuizzes();
         return notes;
@@ -23,7 +23,7 @@ const findNotes = async (query, res, limit = 0) => {
             .populate('course chapter courseCategory', 'title');
         if (limit > 0) notesQuery = notesQuery.limit(limit);
         let notes = await notesQuery;
-        if (!notes) throw Error('No notes found!');
+        if (!notes) return res.status(204).json({ message: 'No notes found!' });
 
         notes = await Promise.all(notes.map(async (note) => {
             if (note.quizzes && note.quizzes.length > 0) {
@@ -66,7 +66,7 @@ exports.getOneNotes = async (req, res) => {
         let notes = await Notes.findOne(query)
             .select('title description notes_file chapter course courseCategory quizzes createdAt')
             .populate('course chapter courseCategory', 'title');
-        if (!notes) return res.status(404).json({ msg: 'No notes found!' });
+        if (!notes) return res.status(404).json({ message: 'No notes found!' });
 
         notes = await notes.populateQuizzes();
         res.status(200).json(notes);
@@ -83,7 +83,7 @@ exports.createNotes = async (req, res) => {
         const not_file = req.file;
         try {
             const note = await Notes.findOne({ _id: req.params.id });
-            if (!note) throw Error('Failed! note not exists!');
+            if (!note) return res.status(404).json({ message: 'Note not found' });
 
             const params = {
                 Bucket: process.env.S3_BUCKET || config.get('S3Bucket'),
@@ -146,14 +146,14 @@ exports.updateNotesQuizzes = async (req, res) => {
 exports.removeQuizFromNotes = async (req, res) => {
     try {
         const note = await Notes.findOne({ _id: req.params.id });
-        if (!note) throw Error('Notes not found!');
+        if (!note) return res.status(404).json({ message: 'Notes not found!' });
 
         await Notes.updateOne(
             { _id: note._id },
             { $pull: { quizzes: req.body.quizID } }
         );
 
-        res.status(200).json({ msg: `Deleted!` });
+        res.status(200).json({ message: `Deleted!` });
     } catch (err) {
         handleError(res, err);
     }
@@ -162,7 +162,7 @@ exports.removeQuizFromNotes = async (req, res) => {
 exports.deleteNotes = async (req, res) => {
     try {
         const notes = await Notes.findById(req.params.id);
-        if (!notes) throw Error('Notes not found!');
+        if (!notes) return res.status(404).json({ message: 'Notes not found!' });
 
         const params = {
             Bucket: process.env.S3_BUCKET || config.get('S3Bucket'),
@@ -181,12 +181,12 @@ exports.deleteNotes = async (req, res) => {
         // API Call to delete Download from downloads service
         const downloadServiceUrl = `${process.env.DOWNLOADS_SERVICE_URL}/api/downloads/by-notes/${notes._id}`;
         const response = await axios.delete(downloadServiceUrl);
-        if (response.status !== 200) throw Error('Something went wrong while deleting the downloads!');
+        if (response.status !== 200) return res.status(500).json({ message: 'Could not delete download, try again!' });
 
         const removedNotes = await Notes.deleteOne({ _id: req.params.id });
-        if (!removedNotes) throw Error('Something went wrong while deleting!');
+        if (!removedNotes) return res.status(500).json({ message: 'Could not delete notes, try again!' });
 
-        res.status(200).json({ msg: `Deleted!` });
+        res.status(200).json({ message: `Deleted!` });
     } catch (err) {
         handleError(res, err);
     }

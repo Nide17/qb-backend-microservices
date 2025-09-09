@@ -6,7 +6,7 @@ const { handleError } = require('../utils/error');
 const findChapterById = async (id, res, selectFields = '') => {
     try {
         const chapter = await Chapter.findById(id).select(selectFields).populate('course');
-        if (!chapter) return res.status(404).json({ msg: 'No chapter found!' });
+        if (!chapter) return res.status(404).json({ message: 'No chapter found!' });
         return chapter;
     } catch (err) {
         return handleError(res, err);
@@ -49,7 +49,7 @@ exports.getOneChapter = async (req, res) => {
 exports.createChapter = async (req, res) => {
     const validationError = validateChapterFields(req.body);
     if (validationError) {
-        return res.status(400).json({ msg: validationError });
+        return res.status(400).json({ message: validationError });
     }
 
     try {
@@ -99,7 +99,7 @@ exports.deleteChapter = async (req, res) => {
         const removedChapter = await Chapter.deleteOne({ _id: req.params.id });
         if (!removedChapter) throw Error('Something went wrong while deleting this chapter!');
 
-        res.status(200).json({ msg: 'Chapter Deleted!' });
+        res.status(200).json({ message: 'Chapter Deleted!' });
     } catch (err) {
         handleError(res, err);
     }

@@ -1,97 +1,121 @@
-const socketIO = require('socket.io');
+// Enhanced Socket.IO for Contacts Service
+// Uses the shared enhanced socket manager for improved real-time features
+const socketManager = require('../../shared-utils/enhanced-socket');
 
 let io = null;
-let onlineUsers = []
-
-const CORSOptions = {
-    allowedHeaders: ["Content-Type", "Authorization", "x-auth-token", "Access-Control-Allow-Origin", "Access-Control-Allow-Methods", "Access-Control-Allow-Headers"],
-    methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
-    origin: "*",
-    credentials: true
-};
 
 exports.initialize = (httpServer) => {
-    io = socketIO(httpServer, { cors: CORSOptions });
+    // Initialize with the enhanced socket manager
+    io = socketManager.initialize(httpServer);
 
-    io.on('connection', (socket) => {
+    // Enhanced socket manager automatically handles:
+    // - User authentication and sessions
+    // - Connection management and reconnection
+    // - Online user tracking and presence
+// Enhanced Socket.IO for Contacts Service
+// Uses the shared enhanced socket manager for improved real-time features
+const socketManager = require('../../shared-utils/enhanced-socket');
 
-        // Listen for 'newUserConnected' event
-        socket.on('newUserConnected', ({ _id, name, email }) => {
-            console.log("New user connected: ", name, email, _id);
+let io = null;
 
-            // Update the list of users when a new user connects to the server
-            if (onlineUsers.find(user => user.email === email)) {
-                onlineUsers = onlineUsers.filter(user => user.email !== email);
-            }
-            onlineUsers.push({ socketID: socket.id, _id, name, email });
-            io.emit('newUserOnline', { onlineUsers, new_user: { name, email } })
+exports.initialize = (httpServer) => {
+    // Initialize with the enhanced socket manager
+    io = socketManager.initialize(httpServer);
+
+    console.log('✨ Contacts Service: Enhanced Socket.IO initialized');
+    
+    // Set up contacts-specific event handlers
+    setupContactsEvents();
+    
+    return io;
+};
+
+function setupContactsEvents() {
+    // Listen for new replies on contacts
+    socketManager.getIO().on('connection', (socket) => {
+        // Handle new replies to contact messages
+        socket.on('newReply', (data) => {
+            data.reply_date = new Date();
+            socketManager.broadcastToAll('replyReceived', data);
         });
 
-        socket.on('newReply', (data) => {
-            data.reply_date = new Date()
-            io.emit('replyReceived', data)
-        })
-
-        // Catch the emitted message from client
+        // Handle contact messages from client
         socket.on('contactMsgClient', (contactMsg) => {
-            // Send message back to all except current user
-            socket.broadcast.emit("contactMsgServer", contactMsg)
-        })
+            socket.broadcast.emit('contactMsgServer', contactMsg);
+        });
 
-        // CHATTING ROOM - Add a user to a room
+        // Legacy room joining (kept for backward compatibility)
         socket.on('join_room', ({ username, roomName }) => {
             console.log(`${username} joined room: ${roomName}`);
-            socket.join(roomName); // Join the user to a room
+            socket.join(roomName);
 
-            // Send message to all users currently in the room, apart from the user that just joined
             socket.to(roomName).emit('welcome_room_message', {
                 message: `${username} has joined the chat room`,
                 username
             });
 
-            // Send welcome msg to user that just joined chat only
             socket.emit('welcome_room_message', {
                 message: `Welcome ${username}`,
                 username
             });
 
-            // Send Messages inside chat room
+            // Room messages (legacy support)
             socket.on('room_message', (data) => {
-                io.in(roomName).emit('backRoomMessage', data);
-            })
+                socketManager.getIO().in(roomName).emit('backRoomMessage', data);
+            });
         });
-
-        socket.on('disconnect', (reason) => {
-            console.log('A client disconnected with id = ', socket.id, " reason ==> ", reason);
-            onlineUsers = onlineUsers.filter(user => user.socketID !== socket.id);
-            io.emit('userDisconnected', { socketID: socket.id, onlineUsers });
-        });
-    })
-    return io;
+    });
 }
 
+// Export functions for compatibility with existing code
 exports.getIO = () => {
     if (!io) {
         throw new Error('Socket.io not initialized!');
     }
     return io;
-}
+};
 
+// Enhanced methods using the new socket manager
 exports.getOnlineUsers = () => {
-    return onlineUsers;
-}
+    return socketManager.getOnlineUsers();
+};
+
+exports.getOnlineUserCount = () => {
+    return socketManager.getOnlineUserCount();
+};
+
+exports.getOnlineUserById = (userId) => {
+    return socketManager.getUserById(userId);
+};
+
+exports.sendToUser = (userId, event, data) => {
+    return socketManager.sendToUser(userId, event, data);
+};
+
+exports.broadcastToRoom = (roomId, event, data) => {
+    return socketManager.broadcastToRoom(roomId, event, data);
+};
+
+exports.broadcastToAll = (event, data) => {
+    return socketManager.broadcastToAll(event, data);
+};
+
+// Backward compatibility methods (deprecated)
 exports.addOnlineUser = (user) => {
-    onlineUsers.push(user);
-}
+    console.warn('addOnlineUser is deprecated - users are managed automatically');
+};
+
 exports.removeOnlineUser = (socketID) => {
-    onlineUsers = onlineUsers.filter(user => user.socketID !== socketID);
-}
+    console.warn('removeOnlineUser is deprecated - users are managed automatically');
+};
+
 exports.getOnlineUser = (socketID) => {
-    return onlineUsers.find(user => user.socketID === socketID);
-}
+    console.warn('getOnlineUser is deprecated - use getOnlineUserById instead');
+    const users = socketManager.getOnlineUsers();
+    return users.find(user => user.socketId === socketID);
+};
+
 exports.getOnlineUserByEmail = (email) => {
-    return onlineUsers.find(user => user.email === email);
-}
-exports.getOnlineUserById = (id) => {
-    return onlineUsers.find(user => user._id === id);
-}
+    const users = socketManager.getOnlineUsers();
+    return users.find(user => user.email === email);
+};

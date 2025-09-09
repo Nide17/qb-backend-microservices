@@ -5,7 +5,7 @@ const { handleError } = require('../utils/error');
 const findFaqById = async (id, res, selectFields = '') => {
     try {
         let faq = await Faq.findById(id).select(selectFields);
-        if (!faq) return res.status(404).json({ msg: 'No faq found!' });
+        if (!faq) return res.status(404).json({ message: 'No faq found!' });
 
         faq = await faq.populateCreatedBy();
         return faq;
@@ -18,7 +18,7 @@ const findFaqById = async (id, res, selectFields = '') => {
 const handleFindByIdAndUpdate = async (id, update, res) => {
     try {
         const faq = await Faq.findById(id);
-        if (!faq) return res.status(404).json({ msg: 'Faq not found!' });
+        if (!faq) return res.status(404).json({ message: 'Faq not found!' });
 
         const updatedFaq = await Faq.findByIdAndUpdate(id, update, { new: true });
         res.status(200).json(updatedFaq);
@@ -30,7 +30,7 @@ const handleFindByIdAndUpdate = async (id, update, res) => {
 exports.getFaqs = async (req, res) => {
     try {
         let faqs = await Faq.find().sort({ createdAt: -1 });
-        if (!faqs) return res.status(404).json({ msg: 'No faqs found!' });
+        if (!faqs) return res.status(204).json({ message: 'No faqs found!' });
 
         faqs = await Promise.all(faqs.map(async (faq) => await faq.populateCreatedBy()));
         res.status(200).json(faqs);
@@ -47,7 +47,7 @@ exports.getOneFaq = async (req, res) => {
 exports.getCreatedBy = async (req, res) => {
     try {
         const faqs = await Faq.find({ created_by: req.params.id }).sort({ createdAt: -1 });
-        if (!faqs) return res.status(404).json({ msg: 'No faqs found!' });
+        if (!faqs) return res.status(404).json({ message: 'No faqs found!' });
         res.status(200).json(faqs);
     } catch (err) {
         handleError(res, err);
@@ -59,7 +59,7 @@ exports.createFaq = async (req, res) => {
     
     // Simple validation
     if (!title || !answer) {
-        return res.status(400).json({ msg: 'Please fill required fields' });
+        return res.status(400).json({ message: 'Please fill required fields' });
     }
 
     try {
@@ -95,7 +95,7 @@ exports.deleteFaq = async (req, res) => {
         const removedFaq = await Faq.deleteOne({ _id: req.params.id });
         if (removedFaq.deletedCount === 0) throw Error('Something went wrong while deleting!');
 
-        res.status(200).json({ msg: "Deleted successfully!" });
+        res.status(200).json({ message: "Deleted successfully!" });
     } catch (err) {
         handleError(res, err);
     }

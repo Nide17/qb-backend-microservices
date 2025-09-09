@@ -4,13 +4,13 @@ const { sendEmail } = require("../utils/emails/sendEmail");
 const { convertFromRaw } = require("draft-js");
 const { stateToHTML } = require("draft-js-export-html");
 const { handleError } = require('../utils/error');
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL;
 
 // Helper function to find contact by ID
 const findContactById = async (id, res, selectFields = '') => {
     try {
         const contact = await Contact.findById(id).select(selectFields);
-        if (!contact) return res.status(404).json({ msg: 'No contact found!' });
+        if (!contact) return res.status(404).json({ message: 'No contact found!' });
         return contact;
     } catch (err) {
         return handleError(res, err);
@@ -20,10 +20,34 @@ const findContactById = async (id, res, selectFields = '') => {
 // Helper function to send emails to admins
 const notifyAdmins = async (newContact) => {
     try {
-        const res = await axios.get(`${API_GATEWAY_URL}/api/users/admins-emails`);
-        const adminsEmails = res.data;
+        // Helper function to safely fetch admin emails with retry on failure
+        const fetchAdminEmails = async () => {
+            try {
+            const response = await axios.get(`${USERS_SERVICE_URL}/api/users/admins-emails`);
+            return response.data;
+            } catch (error) {
+            console.warn(`Failed to fetch admin emails from ${USERS_SERVICE_URL}/api/users/admins-emails:`, error.message);
+            // Retry after 1 minute if failed
+            return new Promise((resolve) => {
+                setTimeout(async () => {
+                try {
+                    const retryResponse = await axios.get(`${USERS_SERVICE_URL}/api/users/admins-emails`);
+                    resolve(retryResponse.data);
+                } catch (retryError) {
+                    console.warn(`Retry failed to fetch admin emails:`, retryError.message);
+                    resolve(null);
+                }
+                }, 60000); // 1 minute
+            });
+            }
+        };
 
-        if (!adminsEmails) throw Error('No admins found!');
+        const adminsEmails = await fetchAdminEmails();
+
+        if (!adminsEmails) {
+            console.warn('No admin emails available for notification');
+            return;
+        }
 
         adminsEmails.forEach(adm => {
             try {
@@ -84,7 +108,12 @@ exports.getOneContact = async (req, res) => {
 exports.createContact = async (req, res) => {
     try {
         const newContact = await Contact.create(req.body);
-        if (!newContact) throw Error('Something went wrong!');
+        if (!newContact) {
+            return res.status(500).json({
+                success: false,
+                message: 'Something went wrong!'
+            });
+        }
 
         // Sending e-mail to contacted user
         try {
@@ -121,7 +150,12 @@ exports.updateContact = async (req, res) => {
             { new: true }
         );
 
-        if (!newMessage) throw Error('Something went wrong while trying to update the contact');
+        if (!newMessage) {
+            return res.status(500).json({
+                success: false,
+                message: 'Something went wrong while trying to update the contact'
+            });
+        }
 
         // Send Reply email
         try {
@@ -151,7 +185,67 @@ exports.deleteContact = async (req, res) => {
         if (!contact) return;
 
         await Contact.findByIdAndDelete(req.params.id);
-        res.status(200).json({ msg: 'Contact deleted successfully' });
+        res.status(200).json({ message: 'Contact deleted successfully' });
+    } catch (err) {
+        handleError(res, err);
+    }
+};
+
+// Get database statistics
+exports.getDatabaseStats = async (req, res) => {
+    try {
+        const db = Contact.db;
+        
+        // Get stats for contacts collection using document sampling approach
+        const contactsCollection = db.collection('contacts');
+        const contactsCount = await contactsCollection.countDocuments();
+        const contactSample = await contactsCollection.find({}).limit(50).toArray();
+        const avgContactSize = contactSample.length > 0 ? 
+            contactSample.reduce((sum, doc) => sum + JSON.stringify(doc).length, 0) / contactSample.length : 0;
+        const estimatedContactDataSize = contactsCount * avgContactSize;
+        
+        // Get aggregated contact data
+        const pipeline = [
+            {
+                $group: {
+                    _id: null,
+                    totalContacts: { $sum: 1 },
+                    avgMessageLength: { $avg: { $strLenCP: "$message" } },
+                    repliedCount: { $sum: { $cond: [{ $ne: ["$reply", null] }, 1, 0] } }
+                }
+            }
+        ];
+        
+        const aggregatedStats = await contactsCollection.aggregate(pipeline).toArray();
+        const contactStats = aggregatedStats[0] || {};
+
+        const dbStats = {
+            service: 'contacts',
+            timestamp: new Date().toISOString(),
+            documents: contactsCount,
+            totalDocuments: contactsCount,
+            dataSize: estimatedContactDataSize,
+            totalDataSize: estimatedContactDataSize,
+            storageSize: Math.round(estimatedContactDataSize * 1.2),
+            totalStorageSize: Math.round(estimatedContactDataSize * 1.2),
+            indexSize: Math.round(estimatedContactDataSize * 0.1),
+            totalIndexSize: Math.round(estimatedContactDataSize * 0.1),
+            collections: {
+                contacts: {
+                    documents: contactsCount,
+                    dataSize: estimatedContactDataSize,
+                    avgDocumentSize: avgContactSize
+                }
+            },
+            aggregatedStats: {
+                totalContacts: contactStats.totalContacts || contactsCount,
+                avgMessageLength: contactStats.avgMessageLength || 0,
+                repliedCount: contactStats.repliedCount || 0,
+                replyRate: contactsCount > 0 ? ((contactStats.repliedCount || 0) / contactsCount * 100).toFixed(2) + '%' : '0%'
+            }
+        };
+
+        res.status(200).json(dbStats);
     } catch (err) {
         handleError(res, err);
     }

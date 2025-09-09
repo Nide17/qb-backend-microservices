@@ -3,7 +3,7 @@ const { SendHtmlEmail } = require("../../utils/sendEmail")
 // const twilioSID = process.env.TWILIO_ACCOUNT_SID
 // const twilioToken = process.env.TWILIO_AUTH_TOKEN
 // const client = require('twilio')(twilioSID, twilioToken)
-const API_GATEWAY_URL = process.env.API_GATEWAY_URL || 'http://localhost:5000';
+const USERS_SERVICE_URL = process.env.USERS_SERVICE_URL;
 
 // BlogPostsView Model
 const BlogPostsView = require('../../models/blog-posts/BlogPostsView')
@@ -103,34 +103,62 @@ const sendReport = async (reportMessage, reportMessageEmail, adminsEmails) => {
 }
 
 const fetchAdminEmails = async () => {
-    try {
-        const { data } = await axios.get(`${API_GATEWAY_URL}/api/users/admins-emails`);
-        return data;
-    } catch (error) {
-        console.error('Error fetching admin emails:', error);
-        return [];
+    let attempts = 0;
+    const maxAttempts = 2;
+    const retryDelay = 60000; // 1 minute in ms
+
+    while (attempts < maxAttempts) {
+        try {
+            const response = await axios.get(`${USERS_SERVICE_URL}/api/users/admins-emails`, { 
+                headers: { 'x-internal-service': 'true' }
+            });
+            
+            if (response.status >= 200 && response.status < 300 && response.data && response.data.emails) {
+                return response.data.emails;
+            } else {
+                console.log(`Admin emails fetch returned status ${response.status}`);
+                return [];
+            }
+        } catch (error) {
+            attempts++;
+            console.log(`Failed to fetch admin emails for report (attempt ${attempts}):`, error.message);
+            if (attempts < maxAttempts) {
+                await new Promise(resolve => setTimeout(resolve, retryDelay));
+            } else {
+                return [];
+            }
+        }
     }
 }
 
 const scheduledReportMessage = async () => {
-    const report = await getDailyReport();
-    const adminsEmails = await fetchAdminEmails();
+    try {
+        const report = await getDailyReport();
+        const adminsEmails = await fetchAdminEmails();
 
-    const date = new Date();
-    const currentDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
-    const scheduleDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
+        const date = new Date();
+        const currentDate = `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}`;
+        const scheduleDate = new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59);
 
-    const reportMessage = generateReportMessage(report, currentDate);
-    const reportMessageEmail = generateReportEmail(report, currentDate);
+        const reportMessage = generateReportMessage(report, currentDate);
+        const reportMessageEmail = generateReportEmail(report, currentDate);
 
-    const interval = setInterval(async () => {
-        const now = new Date();
-        if (now >= scheduleDate) {
-            console.log('Sending report...');
-            await sendReport(reportMessage, reportMessageEmail, adminsEmails);
-            clearInterval(interval);
-        }
-    }, 1000);
+        const interval = setInterval(async () => {
+            try {
+                const now = new Date();
+                if (now >= scheduleDate) {
+                    console.log('Sending scheduled report...');
+                    await sendReport(reportMessage, reportMessageEmail, adminsEmails);
+                    clearInterval(interval);
+                }
+            } catch (error) {
+                console.log('Error in scheduled report interval:', error.message);
+                clearInterval(interval); // Stop the interval if there's an error
+            }
+        }, 1000);
+    } catch (error) {
+        console.log('Error setting up scheduled report:', error.message);
+    }
 };
 
 module.exports = scheduledReportMessage
